@@ -1,0 +1,27 @@
+service: data-uploader
+
+provider:
+  name: aws
+  runtime: python3.7
+  region: ${opt:region, 'eu-central-1'}
+  stage: ${opt:stage, 'dev'}
+
+package:
+  include:
+    - generate_signed_post.py
+
+functions:
+  generate_signed_post:
+    handler: generate_signed_post.handler
+    role: arn:aws:iam::***REMOVED***:role/data-upload-test
+    events:
+      - http:
+          path: /
+          method: post
+          cors: true
+          authorizer:
+            arn: arn:aws:lambda:eu-central-1:***REMOVED***:function:keycloak-authorizer-dev-authenticate
+            resultTtlInSeconds: 300
+            identitySource: method.request.header.Authorization
+            identityValidationExpression: "^Bearer [-0-9a-zA-Z\\._]*$"
+            type: token
