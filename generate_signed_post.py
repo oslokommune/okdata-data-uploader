@@ -5,12 +5,18 @@ auth_error = {
     "message": "Forbidden. Only the test user can do this",
 }
 
+headers = {
+#    "Access-Control-Allow-Origin": "https://s3-eu-west-1.amazonaws.com",
+#    "Access-Control-Allow-Credentials": True,
+}
+
 def handler(event, context):
     # TODO: Proper auth
     if event['requestContext']['authorizer']['principalId'] != "test-dataplatform":
         return {
             "isBase64Encoded": False,
             "statusCode": 403,
+            "headers": headers,
             "body": json.dumps(auth_error),
         }
 
@@ -27,6 +33,7 @@ def handler(event, context):
     return {
         "isBase64Encoded": False,
         "statusCode": 200,
+        "headers": headers,
         "body": json.dumps(post_response)
     }
 
