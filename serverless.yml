@@ -5,16 +5,31 @@ provider:
   runtime: python3.7
   region: ${opt:region, 'eu-west-1'}
   stage: ${opt:stage, 'dev'}
+  environment:
+      API_URL:
+          Fn::Join:
+              - ""
+              - - "https://"
+                - Ref: "ApiGatewayRestApi"
+                - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
+  iamManagedPolicies:
+      - arn:aws:iam::***REMOVED***:policy/ok-origo-dataplatform-data-upload-s3-put-object-${self:provider.stage}
 
 package:
-  include:
-    - generate_signed_post.py
-    - frontend.py
+    include:
+        - README.md
+        - requirements.txt
+        - generate_signed_post.py
+        - frontend.py
+    exclude:
+        - env/**
+        - requirements.in
 
 functions:
   generate_signed_post:
     handler: generate_signed_post.handler
-    role: arn:aws:iam::***REMOVED***:role/data-upload-test
+    environment:
+        BUCKET: "ok-origo-dataplatform-data-upload-${self:provider.stage}"
     events:
       - http:
           path: /
@@ -28,9 +43,6 @@ functions:
 
   frontend:
     handler: frontend.handler
-    role: arn:aws:iam::***REMOVED***:role/data-upload-test #TODO: Not this role
-    environment:
-        STACK_NAME: ${self:service}-${self:provider.stage}
     events:
       - http:
           path: /

@@ -1,9 +1,7 @@
-import boto3
 import os
 
 def handler(event, context):
-    stack_name = os.environ["STACK_NAME"]
-    api_url = get_api_url(stack_name)
+    api_url = os.environ["API_URL"]
 
     if not api_url:
         return {
@@ -23,16 +21,6 @@ def handler(event, context):
         },
         "body": get_html(api_url),
     }
-
-def get_api_url(stackName):
-    cf = boto3.resource('cloudformation')
-    stack = cf.Stack(stackName)
-
-    for output in stack.outputs:
-        if output["OutputKey"] == "ServiceEndpoint":
-            return output["OutputValue"]
-
-    return None
 
 def get_html(api_url):
     return (
