@@ -1,0 +1,90 @@
+---
+swagger: "2.0"
+info:
+  version: "2019-01-22T14:23:59Z"
+  title: "dev-data-uploader"
+host: "oqy9q99uvb.execute-api.eu-west-1.amazonaws.com"
+basePath: "/dev"
+schemes:
+- "https"
+paths:
+  /:
+    get:
+      responses: {}
+    post:
+      summary: "Generate a signed POST URL"
+      description: "Generates a signed POST URL that a new distribution can be uploaded\
+        \ to"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "UploadRequest"
+        required: true
+        schema:
+          $ref: "#/definitions/UploadRequest"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/UploadResponse"
+        400:
+          description: "400 response"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: "500 response"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: "403 response"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+      - authenticate: []
+securityDefinitions:
+  authenticate:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+    x-amazon-apigateway-authtype: "custom"
+definitions:
+  UploadResponse:
+    type: "object"
+    required:
+    - "fields"
+    - "url"
+    properties:
+      fields:
+        type: "object"
+        title: "Form fields"
+        properties: {}
+      url:
+        type: "string"
+        format: "uri"
+        title: "S3 URL"
+    title: "Upload Response"
+    description: "Response object with the presigned post url and parameters to POST\
+      \ to S3"
+  UploadRequest:
+    type: "object"
+    required:
+    - "distributionId"
+    properties:
+      distributionId:
+        type: "string"
+        title: "Distrbution ID"
+    title: "Upload Request"
+    description: "Request to upload a file to S3"
+  ErrorResponse:
+    type: "object"
+    required:
+    - "message"
+    properties:
+      message:
+        type: "string"
+        title: "Error message"
+    title: "Error"
+    description: "Error response"

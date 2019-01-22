@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "title": "Upload Response",
+  "description": "URL is the URL the file can be POSTed to. Fields are the form fields that must be POSTed along with the file.",
+  "required": ["url", "fields"],
+  "properties": {
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "title": "S3 URL"
+    },
+    "fields": {
+      "type": "object",
+      "title": "Form fields"
+    }
+  }
+}

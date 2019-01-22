@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "title": "Upload Request",
+  "required": ["distributionId"],
+  "properties": {
+    "distributionId": {
+      "type": "string",
+      "title": "Distrbution ID"
+    }
+  }
+}

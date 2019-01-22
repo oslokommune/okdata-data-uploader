@@ -2,34 +2,35 @@ service: data-uploader
 
 provider:
   name: aws
-  runtime: python3.7
+  runtime: python3.6
   region: ${opt:region, 'eu-west-1'}
   stage: ${opt:stage, 'dev'}
   environment:
-      API_URL:
-          Fn::Join:
-              - ""
-              - - "https://"
-                - Ref: "ApiGatewayRestApi"
-                - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
+    API_URL:
+      Fn::Join:
+        - ""
+        - - "https://"
+          - Ref: "ApiGatewayRestApi"
+          - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
   iamManagedPolicies:
-      - arn:aws:iam::***REMOVED***:policy/ok-origo-dataplatform-data-upload-s3-put-object-${self:provider.stage}
+    - arn:aws:iam::***REMOVED***:policy/ok-origo-dataplatform-data-upload-s3-put-object-${self:provider.stage}
+
+plugins:
+  - serverless-aws-documentation
+  - serverless-python-requirements
 
 package:
-    include:
-        - README.md
-        - requirements.txt
-        - generate_signed_post.py
-        - frontend.py
-    exclude:
-        - env/**
-        - requirements.in
+  exclude:
+    - "**/*"
+  include:
+    - src/*.py
+    - doc/models/*.json
 
 functions:
   generate_signed_post:
-    handler: generate_signed_post.handler
+    handler: src/generate_signed_post.handler
     environment:
-        BUCKET: "ok-origo-dataplatform-data-upload-${self:provider.stage}"
+      BUCKET: "ok-origo-dataplatform-data-upload-${self:provider.stage}"
     events:
       - http:
           path: /
@@ -40,10 +41,49 @@ functions:
             identitySource: method.request.header.Authorization
             identityValidationExpression: "^Bearer [-0-9a-zA-Z\\._]*$"
             type: token
+          documentation:
+            summary: Generate a signed POST URL
+            description: Generates a signed POST URL that a new distribution can be uploaded to
+            requestModels:
+              "application/json": UploadRequest
+            methodResponses:
+              - statusCode: "200"
+                responseModels:
+                  "application/json": UploadResponse
+              - statusCode: "400"
+                responseModels:
+                  "application/json": ErrorResponse
+              - statusCode: "403"
+                responseModels:
+                  "application/json": ErrorResponse
+              - statusCode: "500"
+                responseModels:
+                  "application/json": ErrorResponse
 
   frontend:
-    handler: frontend.handler
+    handler: src/frontend.handler
     events:
       - http:
           path: /
           method: GET
+
+custom:
+  documentation:
+    info:
+      title: Data Uploader
+      version: 0.0.1
+      summary: Data Uploader API
+      description: Creates a signed URL and parameters that can be used to POST a file to the S3 upload bucket.
+    models:
+      - name: UploadRequest
+        description: Request to upload a file to S3
+        contentType: "application/json"
+        schema: ${file(doc/models/uploadRequest.json)}
+      - name: UploadResponse
+        description: Response object with the presigned post url and parameters to POST to S3
+        contentType: "application/json"
+        schema: ${file(doc/models/uploadResponse.json)}
+      - name: ErrorResponse
+        description: Error response
+        contentType: "application/json"
+        schema: ${file(doc/models/error.json)}

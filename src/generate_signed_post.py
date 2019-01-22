@@ -1,7 +1,9 @@
+import os
 import json
 import boto3
+
 from botocore.client import Config
-import os
+from jsonschema import validate, ValidationError, SchemaError
 
 
 auth_error = {
@@ -12,6 +14,15 @@ headers = {
 #    "Access-Control-Allow-Origin": "https://s3-eu-west-1.amazonaws.com",
 #    "Access-Control-Allow-Credentials": True,
 }
+
+request_schema = None
+response_schema = None
+
+with open('doc/models/uploadRequest.json') as f:
+    request_schema = json.loads(f.read())
+
+with open('doc/models/uploadResponse.json') as f:
+    response_schema = json.loads(f.read())
 
 def handler(event, context):
     # TODO: Proper auth
@@ -24,8 +35,25 @@ def handler(event, context):
         }
 
     bucket = os.environ["BUCKET"]
-
     body = json.loads(event['body'])
+
+    try:
+        validate(request_schema, body)
+    except ValidationError as e:
+        return {
+            "isBase64Encoded": False,
+            "statusCode": 400,
+            "headers": headers,
+            "body": json.dumps({"message": e.message}),
+        }
+    except SchemaError:
+        return {
+            "isBase64Encoded": False,
+            "statusCode": 500,
+            "headers": headers,
+            "body": json.dumps({"message": "Schema error"}),
+        }
+
     distributionId = body['distributionId']
     # TODO: Magically resolve bucket and key
     distribution = {

@@ -1,0 +1,15 @@
+{
+  "name": "data-uploader",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git@github.oslo.kommune.no:origodigi/data-uploader.git"
+  },
+  "devDependencies": {
+    "prettier": "^1.16.0",
+    "serverless-aws-documentation": "^1.1.0",
+    "serverless-python-requirements": "^4.2.5"
+  }
+}
