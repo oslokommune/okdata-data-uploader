@@ -68,6 +68,21 @@ functions:
           method: GET
 
 custom:
+  pythonRequirements:
+    noDeploy:
+      - black
+      - appdirs # via black
+      - attrs # via black
+      - click # via black
+      - toml # via black
+      - boto3
+      - s3transfer # via boto3
+      - botocore # via boto3, s3transfer
+      - docutils # via botocore (boto3)
+      - jmespath # via boto3, botocore
+      - python-dateutil # via botocore (boto3)
+      - sixw # via python-dateutil (boto3)
+      - urllib3w # via botocore (boto3)
   documentation:
     info:
       title: Data Uploader
