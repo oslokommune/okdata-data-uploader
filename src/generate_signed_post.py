@@ -61,6 +61,7 @@ def generate_signed_post(bucket, key):
         bucket, key, Fields=fields, Conditions=conditions, ExpiresIn=300
     )
 
+
 def error_response(status, message):
     return {
         "isBase64Encoded": False,
