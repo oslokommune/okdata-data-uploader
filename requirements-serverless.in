@@ -1,0 +1,3 @@
+# PIP packages that are not provided by default on AWS Lambda go here
+
+jsonschema

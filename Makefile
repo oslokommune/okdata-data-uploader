@@ -17,17 +17,40 @@ endif
 VENV_NAME ?= env
 VENV_ACTIVATE := . $(VENV_NAME)/bin/activate
 
-node_modules: package.json package-lock.json
-	$(NPM) install
+requirements_in = $(wildcard *.in)
+requirements_out := $(requirements_in:.in=.txt)
+
+.PHONY: help
+help:
+	@echo "make requirements to generate requirements.txt files in correct order"
+	@echo "make test to run tests"
+	@echo "make fmt to automagically format source files"
+	@echo "make deploy to deploy with serverless"
+
+.PHONY: requirements
+requirements: $(requirements_out)
+
+%.txt: %.in
+	$(VENV_ACTIVATE); \
+			pip install pip-tools; \
+			pip-compile --output-file $@ $<; \
+			deactivate
+
+requirements.txt: requirements-serverless.txt
+
+requirements-dev.txt: requirements.txt
 
 $(VENV_NAME):
 	$(PYTHON3) -m venv env
 	$(VENV_ACTIVATE); \
-		pip install -r requirements.txt; \
+		pip install -r requirements-dev.txt; \
 		deactivate
 
+node_modules: package.json package-lock.json
+	$(NPM) install
+
 .PHONY: deploy
-deploy: node_modules
+deploy: node_modules requirements-serverless.txt
 	$(SERVERLESS) deploy
 	$(SERVERLESS) downloadDocumentation --outputFileName=openapi.yaml
 
@@ -38,3 +61,9 @@ fmt: node_modules $(VENV_NAME)
 	$(VENV_ACTIVATE); \
 		black src/; \
 		deactivate
+
+.PHONY: test
+test: $(VENV_NAME)
+	$(VENV_ACTIVATE); \
+			pytest src/; \
+			deactivate
