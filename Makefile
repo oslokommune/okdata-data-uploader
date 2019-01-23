@@ -40,8 +40,8 @@ requirements.txt: requirements-serverless.txt
 
 requirements-dev.txt: requirements.txt
 
-$(VENV_NAME):
-	$(PYTHON3) -m venv env
+$(VENV_NAME): requirements-dev.txt
+	$(PYTHON3) -m venv $(VENV_NAME)
 	$(VENV_ACTIVATE); \
 		pip install -r requirements-dev.txt; \
 		deactivate
@@ -54,10 +54,10 @@ deploy: node_modules requirements-serverless.txt
 	$(SERVERLESS) deploy
 	$(SERVERLESS) downloadDocumentation --outputFileName=openapi.yaml
 
-FMT_EXT := {json,yml}
+FMT_EXT := {json,yml,js,html}
 .PHONY: fmt
 fmt: node_modules $(VENV_NAME)
-	./node_modules/.bin/prettier --write '*.$(FMT_EXT)' 'doc/**/.$(FMT_EXT)' 
+	./node_modules/.bin/prettier --write '*.$(FMT_EXT)' 'doc/**/*.$(FMT_EXT)' 'src/**/*.$(FMT_EXT)'
 	$(VENV_ACTIVATE); \
 		black src/; \
 		deactivate

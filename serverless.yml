@@ -23,7 +23,10 @@ package:
   exclude:
     - "**/*"
   include:
-    - src/*.py
+    - src/frontend.py
+    - src/frontend.html
+    - src/frontend.js
+    - src/generate_signed_post.py
     - doc/models/*.json
 
 functions:
