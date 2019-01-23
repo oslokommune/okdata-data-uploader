@@ -81,8 +81,8 @@ custom:
       - docutils # via botocore (boto3)
       - jmespath # via boto3, botocore
       - python-dateutil # via botocore (boto3)
-      - sixw # via python-dateutil (boto3)
-      - urllib3w # via botocore (boto3)
+      - six # via python-dateutil (boto3)
+      - urllib3 # via botocore (boto3)
   documentation:
     info:
       title: Data Uploader
