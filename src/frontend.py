@@ -2,6 +2,7 @@ import os
 
 _script = None
 _content = None
+_css = None
 
 
 def handler(event, context):
@@ -26,12 +27,14 @@ def handler(event, context):
 def get_html(api_url):
     script = get_script()
     content = get_content()
+    css = get_css()
 
     return (
         "<!DOCTYPE html>"
         "<html>"
         "<head>"
         '<meta charset="utf-8">'
+        f'<style type="text/css">{css}</style>'
         "</head>"
         f"<body>{content}"
         f"<script>window._serviceEndpoint = '{api_url}';</script>"
@@ -59,5 +62,24 @@ def get_content():
     return _content
 
 
+def get_css():
+    global _css
+    if not _css:
+        with open("src/frontend.css") as f:
+            _css = f.read()
+    return _css
+
+
 if __name__ == "__main__":
-    print(handler(None, None))
+    print("Startint test server on http://localhost:8000")
+
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+
+    class HttpTest(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(get_html("").encode())
+
+    httpd = HTTPServer(("localhost", 8000), HttpTest)
+    httpd.serve_forever()

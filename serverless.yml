@@ -26,6 +26,7 @@ package:
     - src/frontend.py
     - src/frontend.html
     - src/frontend.js
+    - src/frontend.css
     - src/generate_signed_post.py
     - doc/models/*.json
 
