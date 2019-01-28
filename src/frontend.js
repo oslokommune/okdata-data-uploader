@@ -6,7 +6,7 @@
 
   // Glorious norwenglish mix
   const $bearerToken = document.querySelector("#bearerToken");
-  const $datasettId = document.querySelector("#datasettId");
+  const $datasetId = document.querySelector("#datasettId");
   const $skjemaId = document.querySelector("#skjemaId");
   const $startTime = document.querySelector("#startTime");
   const $endTime = document.querySelector("#endTime");
@@ -15,33 +15,33 @@
   const $upload = document.querySelector("#upload");
   const $message = document.querySelector(".message");
 
-  function doesDatasettExist(datasettId) {
-    return fetch(`${metadataApiEndpoint}/datasets/${datasettId}`)
+  function doesDatasetExist(datasetId) {
+    return fetch(`${metadataApiEndpoint}/datasets/${datasetId}`)
       .then(res => res.json())
       .then(data => {
         if (!Array.isArray(data) || data.length === 0) {
-          throw new Error("Datasett does not exist");
+          throw new Error("Dataset does not exist");
         }
-        console.log("Found datasett", data);
+        console.log("Found dataset", data);
       });
   }
 
-  function doesVersionExist(datasettId, versionId) {
+  function doesVersionExist(datasetId, versionId) {
     return fetch(
-      `${metadataApiEndpoint}/datasets/${datasettId}/versions/${versionId}`
+      `${metadataApiEndpoint}/datasets/${datasetId}/versions/${versionId}`
     )
       .then(res => res.json())
       .then(data => {
         if (!Array.isArray(data) || data.length === 0) {
-          throw new Error("Datasett does not exist");
+          throw new Error("Dataset does not exist");
         }
         console.log("Found version", data);
       });
   }
 
-  function createEdition(datasettId, versionId, edition) {
+  function createEdition(datasetId, versionId, edition) {
     return fetch(
-      `${metadataApiEndpoint}/datasets/${datasettId}/versions/${versionId}/editions`,
+      `${metadataApiEndpoint}/datasets/${datasetId}/versions/${versionId}/editions`,
       {
         method: "POST",
         body: JSON.stringify(edition)
@@ -56,7 +56,7 @@
 
   function generateS3URL(
     bearerToken,
-    datasettId,
+    datasetId,
     versionId,
     editionId,
     filename
@@ -67,7 +67,7 @@
         Authorization: `Bearer ${bearerToken}`
       }),
       body: JSON.stringify({
-        datasettId,
+        datasetId,
         versionId,
         editionId,
         filename
@@ -100,7 +100,7 @@
     })
       .then(res => {
         if (res.ok) {
-          return res.json();
+          return res.text();
         }
         throw new Error("Failed to POST to S3");
       })
@@ -139,25 +139,25 @@
     console.log("Try upload file", file);
 
     const bearerToken = $bearerToken.value;
-    const datasettId = $datasettId.value;
+    const datasetId = $datasetId.value;
     const skjemaId = $skjemaId.value;
     const startTime = $startTime.value;
     const endTime = $endTime.value;
     const description = $description.value;
 
     Promise.all([
-      doesDatasettExist(datasettId),
-      doesVersionExist(datasettId, skjemaId)
+      doesDatasetExist(datasetId),
+      doesVersionExist(datasetId, skjemaId)
     ])
       .then(() =>
-        createEdition(datasettId, skjemaId, {
+        createEdition(datasetId, skjemaId, {
           startTime,
           endTime,
           description
         })
       )
       .then(editionId =>
-        generateS3URL(bearerToken, datasettId, skjemaId, editionId, file.name)
+        generateS3URL(bearerToken, datasetId, skjemaId, editionId, file.name)
       )
       .then(s3data => postToS3(s3data.url, s3data.fields, file))
       .then(() => info("Uploaded?"))

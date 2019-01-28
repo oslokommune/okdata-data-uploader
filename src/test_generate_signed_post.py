@@ -16,7 +16,15 @@ def api_gateway_event():
     """
 
     def _event(
-        principalId="test-dataplatform", body=json.dumps({"distributionId": "foo"})
+        principalId="test-dataplatform",
+        body=json.dumps(
+            {
+                "datasetId": "foo",
+                "versionId": "1",
+                "editionId": "bar",
+                "filename": "datastuff.txt",
+            }
+        ),
     ):
         return {
             "body": body,

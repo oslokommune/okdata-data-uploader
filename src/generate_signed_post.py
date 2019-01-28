@@ -1,11 +1,13 @@
 import os
 import json
 import boto3
+import logging
 
 from botocore.client import Config
 from jsonschema import validate, ValidationError, SchemaError
 from json.decoder import JSONDecodeError
 
+log = logging.getLogger()
 
 request_schema = None
 response_schema = None
@@ -29,23 +31,30 @@ def handler(event, context):
         body = json.loads(event["body"])
         validate(body, request_schema)
     except JSONDecodeError as e:
+        log.exception(f"Body is not a valid JSON document: {e}")
         return error_response(400, "Body is not a valid JSON document")
     except ValidationError as e:
+        log.exception(f"JSON document does not conform to the given schema: {e}")
         return error_response(400, "JSON document does not conform to the given schema")
     except SchemaError:
+        log.exception(f"Schema error: {e}")
         return error_response(500, "Internal server error")
 
-    distributionId = body["distributionId"]
-    # TODO: Magically resolve bucket and key
-    distribution = {"bucket": bucket, "key": f"data-upload-test/{distributionId}"}
-
-    post_response = generate_signed_post(distribution["bucket"], distribution["key"])
+    # TODO: Should we verify dataset/schema here, or just let the frontend do it?
+    # TODO: Same with creating edition; here or in frontend?
+    s3path = generate_s3_path(**body)
+    log.info(f"S3 key: {s3path}")
+    post_response = generate_signed_post(bucket, s3path)
 
     return {
         "isBase64Encoded": False,
         "statusCode": 200,
         "body": json.dumps(post_response),
     }
+
+
+def generate_s3_path(datasetId, versionId, editionId, filename):
+    return f"incoming/green/dataset={datasetId}/schema={versionId}/edition={editionId}/{filename}"
 
 
 def generate_signed_post(bucket, key):
@@ -56,6 +65,7 @@ def generate_signed_post(bucket, key):
         config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
     )
 
+    # TODO: Add more conditions!
     fields = {"acl": "private"}
     conditions = [{"acl": "private"}]
 
