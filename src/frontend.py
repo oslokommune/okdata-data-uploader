@@ -37,7 +37,8 @@ def get_html(api_url):
         f'<style type="text/css">{css}</style>'
         "</head>"
         f"<body>{content}"
-        f"<script>window._serviceEndpoint = '{api_url}';</script>"
+        f"<script>window._generateS3UrlEndpoint = '{api_url}';</script>"
+        f"<script>window._metadataApiEndpoint = '{api_url}/metadataproxy';</script>"
         f"<script>{script}</script>"
         "</body>"
         "</html>"

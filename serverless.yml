@@ -28,6 +28,7 @@ package:
     - src/frontend.js
     - src/frontend.css
     - src/generate_signed_post.py
+    - src/metadata_api_proxy.py
     - doc/models/*.json
 
 functions:
@@ -70,6 +71,16 @@ functions:
       - http:
           path: /
           method: GET
+
+  metadata_proxy:
+    handler: src/metadata_api_proxy.handler
+    events:
+      - http:
+          path: /metadataproxy/{path+}
+          method: GET
+      - http:
+          path: /metadataproxy/{path+}
+          method: POST
 
 custom:
   pythonRequirements:
