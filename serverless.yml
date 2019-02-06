@@ -5,6 +5,10 @@ provider:
   runtime: python3.6
   region: ${opt:region, 'eu-west-1'}
   stage: ${opt:stage, 'dev'}
+  deploymentBucket:
+    name: ok-origo-dataplatform-config-${self:provider.stage}
+    serverSideEncryption: AES256
+  deploymentPrefix: deploy
   environment:
     API_URL:
       Fn::Join:
