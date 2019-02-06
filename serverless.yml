@@ -17,7 +17,11 @@ provider:
           - Ref: "ApiGatewayRestApi"
           - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
   iamManagedPolicies:
-    - arn:aws:iam::***REMOVED***:policy/ok-origo-dataplatform-data-upload-s3-put-object-${self:provider.stage}
+    - Fn::Join:
+        - ":"
+        - - "arn:aws:iam:"
+          - Ref: "AWS::AccountId"
+          - "policy/data-uploader-policy"
 
 plugins:
   - serverless-aws-documentation
@@ -39,7 +43,7 @@ functions:
   generate_signed_post:
     handler: src/generate_signed_post.handler
     environment:
-      BUCKET: "ok-origo-dataplatform-data-upload-${self:provider.stage}"
+      BUCKET: "ok-origo-dataplatform-${self:provider.stage}"
     events:
       - http:
           path: /
