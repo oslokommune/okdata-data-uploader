@@ -17,6 +17,13 @@ var/
 *.egg
 node_modules/
 __pycache__
+.tox
 
 # Serverless directories
 .serverless
+
+# Jetbrains
+.idea/
+
+# Virtual environment
+venv
