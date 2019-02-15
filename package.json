@@ -7,6 +7,9 @@
     "type": "git",
     "url": "git@github.oslo.kommune.no:origodigi/data-uploader.git"
   },
+  "scripts": {
+      "lint": "prettier -l '{doc,src}/**/*.{json,yml,js,html}'"
+  },
   "devDependencies": {
     "prettier": "^1.16.0",
     "serverless-aws-documentation": "^1.1.0",

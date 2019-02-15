@@ -36,7 +36,7 @@ def handler(event, context):
     except ValidationError as e:
         log.exception(f"JSON document does not conform to the given schema: {e}")
         return error_response(400, "JSON document does not conform to the given schema")
-    except SchemaError:
+    except SchemaError as e:
         log.exception(f"Schema error: {e}")
         return error_response(500, "Internal server error")
 

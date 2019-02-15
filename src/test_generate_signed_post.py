@@ -2,7 +2,7 @@ import os
 import json
 import pytest
 
-from generate_signed_post import handler, error_response, generate_signed_post
+from generate_signed_post import handler, error_response
 
 
 def setup_module():

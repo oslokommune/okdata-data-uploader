@@ -14,5 +14,5 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.oslo.kommune.no/origo-dataplatform/data-uploader",
     packages=setuptools.find_packages(),
-    install_requires=["jsonschema==2.6.0"],
+    install_requires=["jsonschema"],
 )
