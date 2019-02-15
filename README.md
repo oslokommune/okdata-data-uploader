@@ -7,8 +7,7 @@ Returns a presigned URL and form fields that can be used to POST a file to S3.
 1. [Install Serverless Framework](https://serverless.com/framework/docs/getting-started/)
 2. Install plugins: 
 ```
-sls plugin install -n serverless-aws-documentation
-sls plugin install -n serverless-python-requirements
+npm install
 ```
 
 ## Running tests
