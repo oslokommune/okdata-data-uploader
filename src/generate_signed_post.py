@@ -54,7 +54,9 @@ def handler(event, context):
 
 
 def generate_s3_path(datasetId, versionId, editionId, filename):
-    return f"incoming/green/dataset={datasetId}/schema={versionId}/edition={editionId}/{filename}"
+    return (
+        f"incoming/green/{datasetId}/version={versionId}/edition={editionId}/{filename}"
+    )
 
 
 def generate_signed_post(bucket, key):
