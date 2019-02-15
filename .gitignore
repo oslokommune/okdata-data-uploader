@@ -1,6 +1,5 @@
 # Distribution / packaging
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -26,4 +25,5 @@ __pycache__
 .idea/
 
 # Virtual environment
-venv
+venv/
+env/
