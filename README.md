@@ -2,6 +2,22 @@
 
 Returns a presigned URL and form fields that can be used to POST a file to S3.
 
+## Setup
+
+1. [Install Serverless Framework](https://serverless.com/framework/docs/getting-started/)
+2. Install plugins: 
+```
+npm install
+```
+
+## Running tests
+
+Tests are run using [tox](https://pypi.org/project/tox/).
+
+```
+$ tox
+```
+
 ## Deploy
 
 With `npm` and `serverless` installed:
