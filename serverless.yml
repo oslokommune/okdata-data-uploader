@@ -82,6 +82,8 @@ functions:
 
   metadata_proxy:
     handler: src/metadata_api_proxy.handler
+    environment:
+      METADATA_API_URL: "https://metadata.api-test.oslo.kommune.no/dev"
     events:
       - http:
           path: /metadataproxy/{path+}
@@ -92,6 +94,7 @@ functions:
 
 custom:
   pythonRequirements:
+    dockerizePip: non-linux
     slim: true
   documentation:
     info:

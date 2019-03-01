@@ -1,8 +1,8 @@
 import json
-
+import os
 from botocore.vendored import requests
 
-METADATA_API_URL = "https://***REMOVED***.execute-api.eu-west-1.amazonaws.com/dev"
+METADATA_API_URL = os.environ["METADATA_API_URL"]
 
 
 def handler(event, context):

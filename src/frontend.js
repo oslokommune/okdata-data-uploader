@@ -153,7 +153,8 @@
         createEdition(datasetId, skjemaId, {
           startTime,
           endTime,
-          description
+          description,
+          edition: Math.floor(Date.now() / 1000)
         })
       )
       .then(editionId =>

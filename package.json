@@ -8,7 +8,8 @@
     "url": "git@github.oslo.kommune.no:origodigi/data-uploader.git"
   },
   "scripts": {
-      "lint": "prettier -l '{doc,src}/**/*.{json,yml,js,html}'"
+      "lint": "prettier -l '{doc,src}/**/*.{json,yml,js,html}'",
+      "auto-lint": "prettier --write '{doc,src}/**/*.{json,yml,js,html}'"
   },
   "devDependencies": {
     "prettier": "^1.16.0",
