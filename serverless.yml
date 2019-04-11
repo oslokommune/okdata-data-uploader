@@ -48,6 +48,7 @@ functions:
       - http:
           path: /
           method: post
+          cors: true
           authorizer:
             arn: arn:aws:lambda:${self:provider.region}:***REMOVED***:function:keycloak-authorizer-${self:provider.stage}-authenticate
             resultTtlInSeconds: 300
