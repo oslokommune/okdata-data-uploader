@@ -16,7 +16,7 @@ def api_gateway_event():
     """
 
     def _event(
-        principalId="test-dataplatform",
+        principalId="jd",
         body=json.dumps(
             {
                 "datasetId": "foo",
