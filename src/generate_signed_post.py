@@ -21,7 +21,7 @@ with open("doc/models/uploadResponse.json") as f:
 
 def handler(event, context):
     # TODO: Proper auth
-    if event["requestContext"]["authorizer"]["principalId"] != "api-catalog":
+    if event["requestContext"]["authorizer"]["principalId"] != "jd":
         return error_response(403, "Forbidden. Only the test user can do this")
 
     bucket = os.environ["BUCKET"]
