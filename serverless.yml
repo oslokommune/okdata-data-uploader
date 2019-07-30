@@ -73,26 +73,6 @@ functions:
               - statusCode: "500"
                 responseModels:
                   "application/json": ErrorResponse
-
-  frontend:
-    handler: src/frontend.handler
-    events:
-      - http:
-          path: /
-          method: GET
-
-  metadata_proxy:
-    handler: src/metadata_api_proxy.handler
-    environment:
-      METADATA_API_URL: "https://metadata.api-test.oslo.kommune.no/dev"
-    events:
-      - http:
-          path: /metadataproxy/{path+}
-          method: GET
-      - http:
-          path: /metadataproxy/{path+}
-          method: POST
-
 custom:
   pythonRequirements:
     dockerizePip: non-linux

@@ -18,12 +18,7 @@ def api_gateway_event():
     def _event(
         principalId="jd",
         body=json.dumps(
-            {
-                "datasetId": "foo",
-                "versionId": "1",
-                "editionId": "bar",
-                "filename": "datastuff.txt",
-            }
+            {"editionId": "datasetid/1/20190101T125959", "filename": "datastuff.txt"}
         ),
     ):
         return {
