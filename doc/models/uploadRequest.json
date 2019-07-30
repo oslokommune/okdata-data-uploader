@@ -1,16 +1,8 @@
 {
   "type": "object",
   "title": "Upload Request",
-  "required": ["datasetId", "versionId", "editionId", "filename"],
+  "required": ["editionId", "filename"],
   "properties": {
-    "datasetId": {
-      "type": "string",
-      "title": "Dataset ID"
-    },
-    "versionId": {
-      "type": "string",
-      "title": "Schema version ID"
-    },
     "editionId": {
       "type": "string",
       "title": "Edition ID"
