@@ -55,12 +55,10 @@ def handler(event, context):
 
 
 def generate_s3_path(editionId, filename):
-    dataset = editionId.split('/')[0]
-    version = editionId.split('/')[1]
-    edition = editionId.split('/')[2]
-    return (
-        f"incoming/green/{dataset}/version={version}/edition={edition}/{filename}"
-    )
+    dataset = editionId.split("/")[0]
+    version = editionId.split("/")[1]
+    edition = editionId.split("/")[2]
+    return f"incoming/green/{dataset}/version={version}/edition={edition}/{filename}"
 
 
 def generate_signed_post(bucket, key):
