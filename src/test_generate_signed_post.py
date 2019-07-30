@@ -19,9 +19,7 @@ def api_gateway_event():
         principalId="jd",
         body=json.dumps(
             {
-                "datasetId": "foo",
-                "versionId": "1",
-                "editionId": "bar",
+                "editionId": "datasetid/1/20190101T125959",
                 "filename": "datastuff.txt",
             }
         ),
