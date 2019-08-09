@@ -44,6 +44,7 @@ functions:
     handler: src/generate_signed_post.handler
     environment:
       BUCKET: "ok-origo-dataplatform-${self:provider.stage}"
+      METADATA_API: ${ssm:/dataplatform/metadata-api/url}
     events:
       - http:
           path: /

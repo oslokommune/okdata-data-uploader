@@ -1,5 +1,6 @@
 import os
 import json
+import requests_mock
 import pytest
 
 from generate_signed_post import handler, error_response
@@ -118,3 +119,56 @@ def test_handler(api_gateway_event):
     event = api_gateway_event()
     ret = handler(event, None)
     assert ret["statusCode"] == 200
+
+
+@requests_mock.Mocker(kw="mock")
+def test_s3_confidentiality_path_yellow(api_gateway_event, **kwargs):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/alder-distribusjon-status"
+    response = json.dumps({"confidentiality": "yellow"})
+    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
+
+    event = api_gateway_event()
+    postBody = json.loads(event["body"])
+    postBody["editionId"] = "alder-distribusjon-status/1/20190101T125959"
+    event["body"] = json.dumps(postBody)
+
+    ret = handler(event, None)
+    body = json.loads(ret["body"])
+    key = body["fields"]["key"]
+    assert "/yellow/" in key
+
+
+@requests_mock.Mocker(kw="mock")
+def test_s3_confidentiality_path_green(api_gateway_event, **kwargs):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/badetemperatur"
+    response = json.dumps({"confidentiality": "green"})
+    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
+
+    event = api_gateway_event()
+    postBody = json.loads(event["body"])
+    postBody["editionId"] = "badetemperatur/1/20190101T125959"
+    event["body"] = json.dumps(postBody)
+
+    ret = handler(event, None)
+    body = json.loads(ret["body"])
+    key = body["fields"]["key"]
+    assert "/green/" in key
+
+
+@requests_mock.Mocker(kw="mock")
+def test_s3_confidentiality_path_no_confidentiality_response(
+    api_gateway_event, **kwargs
+):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/badetemperatur"
+    response = json.dumps({"hello": "world"})
+    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
+
+    event = api_gateway_event()
+    postBody = json.loads(event["body"])
+    postBody["editionId"] = "badetemperatur/1/20190101T125959"
+    event["body"] = json.dumps(postBody)
+
+    ret = handler(event, None)
+    body = json.loads(ret["body"])
+    key = body["fields"]["key"]
+    assert "/green/" in key

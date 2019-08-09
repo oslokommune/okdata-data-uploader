@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 import logging
+import requests
 
 from botocore.client import Config
 from jsonschema import validate, ValidationError, SchemaError
@@ -54,11 +55,23 @@ def handler(event, context):
     }
 
 
+def get_confidentiality(dataset):
+    baseUrl = os.environ["METADATA_API"]
+    url = f"{baseUrl}/datasets/{dataset}"
+    response = requests.get(url)
+    data = response.json()
+    confidentiality = "green"
+    if "confidentiality" in data:
+        confidentiality = data["confidentiality"]
+    return confidentiality
+
+
 def generate_s3_path(editionId, filename):
     dataset = editionId.split("/")[0]
     version = editionId.split("/")[1]
     edition = editionId.split("/")[2]
-    return f"incoming/green/{dataset}/version={version}/edition={edition}/{filename}"
+    confidentiality = get_confidentiality(dataset)
+    return f"incoming/{confidentiality}/{dataset}/version={version}/edition={edition}/{filename}"
 
 
 def generate_signed_post(bucket, key):
