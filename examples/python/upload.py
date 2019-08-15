@@ -2,7 +2,7 @@ from configparser import ConfigParser
 from sdk.data_uploader import DataUploader
 
 config = ConfigParser()
-config.read('config.ini')
+config.read("config.ini")
 
 #####
 # Datasets to be added to metadata API
@@ -17,20 +17,16 @@ datasetData = {
     "contactPoint": {
         "name": "***REMOVED***",
         "email": "***REMOVED***",
-        "phone": "***REMOVED***"
+        "phone": "***REMOVED***",
     },
-    "publisher": "EIDE"
+    "publisher": "EIDE",
 }
-datasetVersionData = {
-    "version": "6",
-    "schema": {},
-    "transformation": {}
-}
+datasetVersionData = {"version": "6", "schema": {}, "transformation": {}}
 datasetVersionEditionData = {
     "edition": "2019-05-28T15:37:00+02:00",
     "description": "Data for one hour",
     "startTime": "2018-12-21T08:00:00+01:00",
-    "endTime": "2018-12-21T09:00:00+01:00"
+    "endTime": "2018-12-21T09:00:00+01:00",
 }
 
 ######
@@ -38,19 +34,21 @@ datasetVersionEditionData = {
 # not run the relevant DataUploader function
 datasetId = config.get("dataUploader", "datasetId", fallback=None)
 datasetVersion = config.get("dataUploader", "datasetVersion", fallback=None)
-datasetVersionEdition = config.get("dataUploader", "datasetVersionEdition", fallback=None)
+datasetVersionEdition = config.get(
+    "dataUploader", "datasetVersionEdition", fallback=None
+)
 
 upload = DataUploader(config)
 try:
     print("Uploading a file to S3")
     upload.login()
-    if (datasetId == None):
+    if datasetId is None:
         upload.createDataset(datasetData)
-    if (datasetVersion == None):
+    if datasetVersion is None:
         upload.createVersion(datasetVersionData)
-    if (datasetVersionEdition == None):
+    if datasetVersionEdition is None:
         upload.createEdition(datasetVersionEditionData)
-    if (upload.upload("README.md")):
+    if upload.upload("README.md"):
         print("Done... go brew some coffee")
     else:
         print("Could not upload file....")
