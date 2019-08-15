@@ -78,6 +78,7 @@ custom:
   pythonRequirements:
     dockerizePip: non-linux
     slim: true
+    usePoetry: false
   documentation:
     info:
       title: Data Uploader
