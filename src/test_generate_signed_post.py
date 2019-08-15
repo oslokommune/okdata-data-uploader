@@ -200,3 +200,13 @@ def test_validate_edition_correct_edition(**kwargs):
     editionId = "h-eide-test2-5C5uX/1/20190528T133700"
     result = validate_edition(editionId)
     assert result is True
+
+
+@requests_mock.Mocker(kw="mock")
+def test_validate_edition_wrong_edition(**kwargs):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/h-eide-test2-5C5uX/versions/1/editions/20190528T133700"
+    response = json.dumps({"Id": "incorrect/1/20190528T133700"})
+    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
+    editionId = "h-eide-test2-5C5uX/1/20190528T133700"
+    result = validate_edition(editionId)
+    assert result is False

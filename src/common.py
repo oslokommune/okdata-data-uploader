@@ -5,31 +5,12 @@ import boto3
 from botocore.client import Config
 
 
-def get_confidentiality(dataset):
-    baseUrl = os.environ["METADATA_API"]
-    url = f"{baseUrl}/datasets/{dataset}"
-    response = requests.get(url)
-    data = response.json()
-    confidentiality = "green"
-    if "confidentiality" in data:
-        confidentiality = data["confidentiality"]
-    return confidentiality
-
-
 def generate_s3_path(editionId, filename):
     dataset = editionId.split("/")[0]
     version = editionId.split("/")[1]
     edition = editionId.split("/")[2]
     confidentiality = get_confidentiality(dataset)
     return f"incoming/{confidentiality}/{dataset}/version={version}/edition={edition}/{filename}"
-
-
-def error_response(status, message):
-    return {
-        "isBase64Encoded": False,
-        "statusCode": status,
-        "body": json.dumps({"message": message}),
-    }
 
 
 def generate_signed_post(bucket, key):
@@ -47,6 +28,25 @@ def generate_signed_post(bucket, key):
     return s3.generate_presigned_post(
         bucket, key, Fields=fields, Conditions=conditions, ExpiresIn=300
     )
+
+
+def error_response(status, message):
+    return {
+        "isBase64Encoded": False,
+        "statusCode": status,
+        "body": json.dumps({"message": message}),
+    }
+
+
+def get_confidentiality(dataset):
+    baseUrl = os.environ["METADATA_API"]
+    url = f"{baseUrl}/datasets/{dataset}"
+    response = requests.get(url)
+    data = response.json()
+    confidentiality = "green"
+    if "confidentiality" in data:
+        confidentiality = data["confidentiality"]
+    return confidentiality
 
 
 def validate_edition(editionId):
