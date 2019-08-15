@@ -3,7 +3,8 @@ import json
 import requests_mock
 import pytest
 
-from generate_signed_post import handler, error_response
+from generate_signed_post import handler
+from common import error_response, validate_edition
 
 
 def setup_module():
@@ -115,7 +116,14 @@ def test_handler_invalid_json(api_gateway_event):
     )
 
 
-def test_handler(api_gateway_event):
+@requests_mock.Mocker(kw="mock")
+def test_handler(api_gateway_event, **kwargs):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/datasetid"
+    response = json.dumps({"confidentiality": "yellow"})
+    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/datasetid/versions/1/editions/20190101T125959"
+    response = json.dumps({"Id": "datasetid/1/20190101T125959"})
+    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
     event = api_gateway_event()
     ret = handler(event, None)
     assert ret["statusCode"] == 200
@@ -125,6 +133,10 @@ def test_handler(api_gateway_event):
 def test_s3_confidentiality_path_yellow(api_gateway_event, **kwargs):
     url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/alder-distribusjon-status"
     response = json.dumps({"confidentiality": "yellow"})
+    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
+
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/alder-distribusjon-status/versions/1/editions/20190101T125959"
+    response = json.dumps({"Id": "alder-distribusjon-status/1/20190101T125959"})
     kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
 
     event = api_gateway_event()
@@ -142,6 +154,9 @@ def test_s3_confidentiality_path_yellow(api_gateway_event, **kwargs):
 def test_s3_confidentiality_path_green(api_gateway_event, **kwargs):
     url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/badetemperatur"
     response = json.dumps({"confidentiality": "green"})
+    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/badetemperatur/versions/1/editions/20190101T125959"
+    response = json.dumps({"Id": "badetemperatur/1/20190101T125959"})
     kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
 
     event = api_gateway_event()
@@ -162,6 +177,9 @@ def test_s3_confidentiality_path_no_confidentiality_response(
     url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/badetemperatur"
     response = json.dumps({"hello": "world"})
     kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/badetemperatur/versions/1/editions/20190101T125959"
+    response = json.dumps({"Id": "badetemperatur/1/20190101T125959"})
+    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
 
     event = api_gateway_event()
     postBody = json.loads(event["body"])
@@ -172,3 +190,13 @@ def test_s3_confidentiality_path_no_confidentiality_response(
     body = json.loads(ret["body"])
     key = body["fields"]["key"]
     assert "/green/" in key
+
+
+@requests_mock.Mocker(kw="mock")
+def test_validate_edition_correct_edition(**kwargs):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/h-eide-test2-5C5uX/versions/1/editions/20190528T133700"
+    response = json.dumps({"Id": "h-eide-test2-5C5uX/1/20190528T133700"})
+    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
+    editionId = "h-eide-test2-5C5uX/1/20190528T133700"
+    result = validate_edition(editionId)
+    assert result is True
