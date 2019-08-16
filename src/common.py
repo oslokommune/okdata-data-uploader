@@ -6,9 +6,7 @@ from botocore.client import Config
 
 
 def generate_s3_path(editionId, filename):
-    dataset = editionId.split("/")[0]
-    version = editionId.split("/")[1]
-    edition = editionId.split("/")[2]
+    dataset, version, edition = editionId.split("/")
     confidentiality = get_confidentiality(dataset)
     return f"incoming/{confidentiality}/{dataset}/version={version}/edition={edition}/{filename}"
 
@@ -50,11 +48,11 @@ def get_confidentiality(dataset):
 
 
 def validate_edition(editionId):
-    parts = editionId.split("/")
+    dataset, version, edition = editionId.split("/")
     baseUrl = os.environ["METADATA_API"]
     # If this URL exists and the data there matches what we get in from
     # erditionId, then we know that editionId has been created by the metadata API
-    url = f"{baseUrl}/datasets/{parts[0]}/versions/{parts[1]}/editions/{parts[2]}"
+    url = f"{baseUrl}/datasets/{dataset}/versions/{version}/editions/{edition}"
     response = requests.get(url)
     data = response.json()
     if "Id" in data and editionId == data["Id"]:
