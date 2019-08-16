@@ -47,7 +47,6 @@ def handler(event, context):
     if validate_edition(body["editionId"]) is False:
         return error_response(403, "Incorrect dataset edition")
 
-    # TODO: Same with creating edition; here or in frontend?
     s3path = generate_s3_path(**body)
     log.info(f"S3 key: {s3path}")
     post_response = generate_signed_post(bucket, s3path)
