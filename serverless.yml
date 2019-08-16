@@ -45,6 +45,8 @@ functions:
     environment:
       BUCKET: "ok-origo-dataplatform-${self:provider.stage}"
       METADATA_API: ${ssm:/dataplatform/metadata-api/url}
+    layers:
+      - { Fn::ImportValue: PythonBaseLambdaLayer }
     events:
       - http:
           path: /
