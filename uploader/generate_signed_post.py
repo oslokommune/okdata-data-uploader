@@ -4,31 +4,29 @@ import logging
 
 from jsonschema import validate, ValidationError, SchemaError
 from json.decoder import JSONDecodeError
+
 from uploader.common import (
     error_response,
+    edition_missing,
     validate_edition,
+    validate_version,
+    create_edition,
     generate_s3_path,
     generate_signed_post,
 )
+from uploader.errors import DataExistsError, InvalidDatasetEditionError
+from uploader.schema import request_schema
 
 log = logging.getLogger()
+log.setLevel(logging.INFO)
 
-request_schema = None
-response_schema = None
-
-with open("doc/models/uploadRequest.json") as f:
-    request_schema = json.loads(f.read())
-
-with open("doc/models/uploadResponse.json") as f:
-    response_schema = json.loads(f.read())
+BUCKET = os.environ["BUCKET"]
 
 
 def handler(event, context):
     # TODO: Proper auth
     if event["requestContext"]["authorizer"]["principalId"] != "jd":
         return error_response(403, "Forbidden. Only the test user can do this")
-
-    bucket = os.environ["BUCKET"]
 
     body = None
     try:
@@ -44,16 +42,33 @@ def handler(event, context):
         log.exception(f"Schema error: {e}")
         return error_response(500, "Internal server error")
 
-    if validate_edition(body["editionId"]) is False:
+    try:
+        editionId = body["editionId"]
+        edition_created = False
+        if edition_missing(editionId) and validate_version(editionId):
+            body["editionId"] = create_edition(editionId)
+            edition_created = True
+
+        if edition_created is False and validate_edition(editionId) is False:
+            raise InvalidDatasetEditionError()
+
+        s3path = generate_s3_path(**body)
+        log.info(f"S3 key: {s3path}")
+        post_response = generate_signed_post(BUCKET, s3path)
+
+        return {
+            "isBase64Encoded": False,
+            "statusCode": 200,
+            "headers": {"Access-Control-Allow-Origin": "*"},
+            "body": json.dumps(post_response),
+        }
+
+    except InvalidDatasetEditionError:
+        log.exception(f"Trying to insert invalid dataset edition: {body}")
         return error_response(403, "Incorrect dataset edition")
-
-    s3path = generate_s3_path(**body)
-    log.info(f"S3 key: {s3path}")
-    post_response = generate_signed_post(bucket, s3path)
-
-    return {
-        "isBase64Encoded": False,
-        "statusCode": 200,
-        "headers": {"Access-Control-Allow-Origin": "*"},
-        "body": json.dumps(post_response),
-    }
+    except DataExistsError as e:
+        log.exception(f"Data already exists: {e}")
+        return error_response(400, "Could not create data as resource already exists")
+    except Exception as e:
+        log.exception(f"Unexpected Exception found : {e}")
+        return error_response(400, "Could not complete request, please try again later")

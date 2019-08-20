@@ -2,7 +2,12 @@ import requests
 import os
 import json
 import boto3
+
+from uploader.errors import DataExistsError
 from botocore.client import Config
+from datetime import datetime
+
+BASE_URL = os.environ["METADATA_API"]
 
 
 def generate_s3_path(editionId, filename):
@@ -37,8 +42,7 @@ def error_response(status, message):
 
 
 def get_confidentiality(dataset):
-    baseUrl = os.environ["METADATA_API"]
-    url = f"{baseUrl}/datasets/{dataset}"
+    url = f"{BASE_URL}/datasets/{dataset}"
     response = requests.get(url)
     data = response.json()
     confidentiality = "green"
@@ -49,13 +53,49 @@ def get_confidentiality(dataset):
 
 def validate_edition(editionId):
     dataset, version, edition = editionId.split("/")
-    baseUrl = os.environ["METADATA_API"]
     # If this URL exists and the data there matches what we get in from
     # erditionId, then we know that editionId has been created by the metadata API
-    url = f"{baseUrl}/datasets/{dataset}/versions/{version}/editions/{edition}"
+    url = f"{BASE_URL}/datasets/{dataset}/versions/{version}/editions/{edition}"
     response = requests.get(url)
     data = response.json()
     if "Id" in data and editionId == data["Id"]:
         return True
 
     return False
+
+
+def validate_version(editionId):
+    dataset, version = editionId.split("/")
+    url = f"{BASE_URL}/datasets/{dataset}/versions/{version}"
+    response = requests.get(url)
+    data = response.json()
+    if "Id" in data and editionId == data["Id"]:
+        return True
+
+    return False
+
+
+def edition_missing(editionId):
+    parts = editionId.split("/")
+    if len(parts) == 2:
+        return True
+    if len(parts) == 3 and parts[2] == "":
+        return True
+
+    return False
+
+
+def create_edition(editionId):
+    dataset, version = editionId.split("/")
+    edition = datetime.now().isoformat(timespec="seconds")
+    data = {"edition": edition, "description": f"Data for {edition}"}
+    url = f"{BASE_URL}/{dataset}/versions/{version}/editions"
+    result = requests.post(url, data=json.dumps(data))
+    if result.status_code == 409:
+        edition = data["edition"]
+        raise DataExistsError(
+            f"Edition: {edition} on datasetId {dataset} already exists"
+        )
+
+    id = result.text.replace('"', "")
+    return id
