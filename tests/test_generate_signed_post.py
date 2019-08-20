@@ -3,8 +3,8 @@ import json
 import requests_mock
 import pytest
 
-from generate_signed_post import handler
-from common import error_response, validate_edition
+from uploader.generate_signed_post import handler
+from uploader.common import error_response, validate_edition
 
 
 def setup_module():

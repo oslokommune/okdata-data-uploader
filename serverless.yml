@@ -31,17 +31,13 @@ package:
   exclude:
     - "**/*"
   include:
-    - src/frontend.py
-    - src/frontend.html
-    - src/frontend.js
-    - src/frontend.css
-    - src/generate_signed_post.py
-    - src/metadata_api_proxy.py
+    - uploader/generate_signed_post.py
+    - uploader/common.py
     - doc/models/*.json
 
 functions:
   generate_signed_post:
-    handler: src/generate_signed_post.handler
+    handler: uploader/generate_signed_post.handler
     environment:
       BUCKET: "ok-origo-dataplatform-${self:provider.stage}"
       METADATA_API: ${ssm:/dataplatform/metadata-api/url}

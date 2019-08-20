@@ -4,7 +4,7 @@ import logging
 
 from jsonschema import validate, ValidationError, SchemaError
 from json.decoder import JSONDecodeError
-from common import (
+from uploader.common import (
     error_response,
     validate_edition,
     generate_s3_path,
