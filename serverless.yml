@@ -31,8 +31,7 @@ package:
   exclude:
     - "**/*"
   include:
-    - uploader/generate_signed_post.py
-    - uploader/common.py
+    - uploader/*.py
     - doc/models/*.json
 
 functions:
