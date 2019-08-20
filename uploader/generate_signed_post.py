@@ -49,9 +49,19 @@ def handler(event, context):
             body["editionId"] = create_edition(editionId)
             edition_created = True
 
-        if edition_created is False and validate_edition(editionId) is False:
+        if not edition_created and not validate_edition(editionId):
             raise InvalidDatasetEditionError()
+    except InvalidDatasetEditionError:
+        log.exception(f"Trying to insert invalid dataset edition: {body}")
+        return error_response(403, "Incorrect dataset edition")
+    except DataExistsError as e:
+        log.exception(f"Data already exists: {e}")
+        return error_response(400, "Could not create data as resource already exists")
+    except Exception as e:
+        log.exception(f"Unexpected Exception found : {e}")
+        return error_response(400, "Could not complete request, please try again later")
 
+    try:
         s3path = generate_s3_path(**body)
         log.info(f"S3 key: {s3path}")
         post_response = generate_signed_post(BUCKET, s3path)
@@ -62,13 +72,6 @@ def handler(event, context):
             "headers": {"Access-Control-Allow-Origin": "*"},
             "body": json.dumps(post_response),
         }
-
-    except InvalidDatasetEditionError:
-        log.exception(f"Trying to insert invalid dataset edition: {body}")
-        return error_response(403, "Incorrect dataset edition")
-    except DataExistsError as e:
-        log.exception(f"Data already exists: {e}")
-        return error_response(400, "Could not create data as resource already exists")
     except Exception as e:
-        log.exception(f"Unexpected Exception found : {e}")
+        log.exception(f"Unexpected Exception found when generating signed S3 URL: {e}")
         return error_response(400, "Could not complete request, please try again later")
