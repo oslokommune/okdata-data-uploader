@@ -61,17 +61,13 @@ def handler(event, context):
         log.exception(f"Unexpected Exception found : {e}")
         return error_response(400, "Could not complete request, please try again later")
 
-    try:
-        s3path = generate_s3_path(**body)
-        log.info(f"S3 key: {s3path}")
-        post_response = generate_signed_post(BUCKET, s3path)
+    s3path = generate_s3_path(**body)
+    log.info(f"S3 key: {s3path}")
+    post_response = generate_signed_post(BUCKET, s3path)
 
-        return {
-            "isBase64Encoded": False,
-            "statusCode": 200,
-            "headers": {"Access-Control-Allow-Origin": "*"},
-            "body": json.dumps(post_response),
-        }
-    except Exception as e:
-        log.exception(f"Unexpected Exception found when generating signed S3 URL: {e}")
-        return error_response(400, "Could not complete request, please try again later")
+    return {
+        "isBase64Encoded": False,
+        "statusCode": 200,
+        "headers": {"Access-Control-Allow-Origin": "*"},
+        "body": json.dumps(post_response),
+    }
