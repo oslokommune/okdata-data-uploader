@@ -3,8 +3,8 @@ import json
 import requests_mock
 import pytest
 
-from generate_signed_post import handler
-from common import error_response, validate_edition
+from uploader.generate_signed_post import handler
+from uploader.common import error_response
 
 
 def setup_module():
@@ -190,23 +190,3 @@ def test_s3_confidentiality_path_no_confidentiality_response(
     body = json.loads(ret["body"])
     key = body["fields"]["key"]
     assert "/green/" in key
-
-
-@requests_mock.Mocker(kw="mock")
-def test_validate_edition_correct_edition(**kwargs):
-    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/h-eide-test2-5C5uX/versions/1/editions/20190528T133700"
-    response = json.dumps({"Id": "h-eide-test2-5C5uX/1/20190528T133700"})
-    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
-    editionId = "h-eide-test2-5C5uX/1/20190528T133700"
-    result = validate_edition(editionId)
-    assert result is True
-
-
-@requests_mock.Mocker(kw="mock")
-def test_validate_edition_wrong_edition(**kwargs):
-    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/h-eide-test2-5C5uX/versions/1/editions/20190528T133700"
-    response = json.dumps({"Id": "incorrect/1/20190528T133700"})
-    kwargs["mock"].register_uri("GET", url, text=response, status_code=200)
-    editionId = "h-eide-test2-5C5uX/1/20190528T133700"
-    result = validate_edition(editionId)
-    assert result is False

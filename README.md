@@ -15,21 +15,18 @@ npm install
 Tests are run using [tox](https://pypi.org/project/tox/).
 
 ```
-$ tox
+$ tox -p auto
 ```
 
 ## Deploy
 
 With `npm` and `serverless` installed:
 
-`make deploy`
+`serverless deploy`
 
 ## Code fromatting
 
-Run `make fmt`
-
- - Uses `prettier` to format json and yaml files.
- - Uses `black` to format python.
+ - Use `black` to format python: `black .`
 
 ## Upload size
 A single PUT can be up to 5GB for S3 signed URLs (and is then our current limitation), over that and a multi-part upload must be created
