@@ -36,7 +36,7 @@ package:
 
 functions:
   generate_signed_post:
-    handler: uploader/generate_signed_post.handler
+    handler: uploader.generate_signed_post.handler
     environment:
       BUCKET: "ok-origo-dataplatform-${self:provider.stage}"
       METADATA_API: ${ssm:/dataplatform/metadata-api/url}
