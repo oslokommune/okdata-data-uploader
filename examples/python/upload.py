@@ -1,5 +1,9 @@
+import logging
 from configparser import ConfigParser
 from sdk.data_uploader import DataUploader
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger()
 
 config = ConfigParser()
 config.read("config.ini")
@@ -40,7 +44,7 @@ datasetVersionEdition = config.get(
 
 upload = DataUploader(config)
 try:
-    print("Uploading a file to S3")
+    log.info("Uploading a file to S3")
     upload.login()
     if datasetId is None:
         upload.createDataset(datasetData)
@@ -48,13 +52,17 @@ try:
         upload.createVersion(datasetVersionData)
     if datasetVersionEdition is None:
         upload.createEdition(datasetVersionEditionData)
+
+    log.info(f"Dataset: {upload.datasetId}")
+    log.info(f"Version: {upload.datasetVersion}")
+    log.info(f"Edition: {upload.datasetVersionEdition}")
+
     if upload.upload("README.md"):
-        print("Done... go brew some coffee")
+        log.info("Done... go brew some coffee")
     else:
-        print("Could not upload file....")
+        log.error("Could not upload file....")
 except Exception as e:
-    print(">> Something went horrible wrong")
-    print(e)
+    log.exception(f">> Something went horrible wrong:\n{e}")
 
 # To upload with curl: cmd = upload.curl("tmp3.zip")
 #   Max upload size for now is 5GB
