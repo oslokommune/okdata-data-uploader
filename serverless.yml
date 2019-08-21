@@ -1,3 +1,5 @@
+frameworkVersion: ">=1.50.0 <2.0.0"
+
 service: data-uploader
 
 provider:
@@ -16,16 +18,26 @@ provider:
         - - "https://"
           - Ref: "ApiGatewayRestApi"
           - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
+    GIT_REV: ${git:branch}:${git:sha1}
   iamManagedPolicies:
     - Fn::Join:
         - ":"
         - - "arn:aws:iam:"
           - Ref: "AWS::AccountId"
           - "policy/data-uploader-policy"
+  tags:
+    GIT_REV: ${git:branch}:${git:sha1}
 
 plugins:
   - serverless-aws-documentation
   - serverless-python-requirements
+  - serverless-plugin-git-variables
+
+resources:
+  Description: >
+    ${self:service} ${git:branch}:${git:sha1}
+
+    ${git:message}
 
 package:
   exclude:
@@ -95,3 +107,4 @@ custom:
         description: Error response
         contentType: "application/json"
         schema: ${file(doc/models/error.json)}
+  exportGitVariables: false
