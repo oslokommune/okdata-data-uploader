@@ -13,6 +13,9 @@ provider:
   deploymentPrefix: deploy
   environment:
     GIT_REV: ${git:branch}:${git:sha1}
+    BUCKET: "ok-origo-dataplatform-${self:provider.stage}"
+    METADATA_API: ${ssm:/dataplatform/metadata-api/url}
+    AUTHORIZER_API: ${ssm:/dataplatform/simple-dataset-authorizer/url}
   iamManagedPolicies:
     - Fn::Join:
         - ":"
@@ -43,12 +46,8 @@ package:
 functions:
   generate_signed_post:
     handler: uploader.generate_signed_post.handler
-    environment:
-      BUCKET: "ok-origo-dataplatform-${self:provider.stage}"
-      METADATA_API: ${ssm:/dataplatform/metadata-api/url}
-      AUTHORIZER_API: { Fn::ImportValue: AuthorizerApiUrl }
     layers:
-      - { Fn::ImportValue: PythonBaseLambdaLayer }
+      - ${ssm:/dataplatform/python-base-lambda-layer/arn}
     events:
       - http:
           path: /
