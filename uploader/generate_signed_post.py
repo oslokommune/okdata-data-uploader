@@ -16,6 +16,7 @@ from uploader.common import (
 )
 from uploader.errors import DataExistsError, InvalidDatasetEditionError
 from uploader.schema import request_schema
+from uploader.auth import is_owner
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -24,10 +25,6 @@ BUCKET = os.environ["BUCKET"]
 
 
 def handler(event, context):
-    # TODO: Proper auth
-    if event["requestContext"]["authorizer"]["principalId"] != "jd":
-        return error_response(403, "Forbidden. Only the test user can do this")
-
     body = None
     try:
         body = json.loads(event["body"])
@@ -42,8 +39,15 @@ def handler(event, context):
         log.exception(f"Schema error: {e}")
         return error_response(500, "Internal server error")
 
+    editionId = body["editionId"]
+    authorization = event["headers"]["Authorization"]
+    dataset, *_ = editionId.split("/")
+
+    log.info(f"Upload to {editionId}")
+    if not is_owner(authorization, dataset):
+        return error_response(403, "Forbidden")
+
     try:
-        editionId = body["editionId"]
         edition_created = False
         if edition_missing(editionId) and validate_version(editionId):
             body["editionId"] = create_edition(editionId)

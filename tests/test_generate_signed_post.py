@@ -1,4 +1,4 @@
-import os
+import re
 import json
 import pytest
 
@@ -6,8 +6,22 @@ from uploader.generate_signed_post import handler
 from uploader.common import error_response
 
 
-def setup_module():
-    os.environ["BUCKET"] = "feh"
+@pytest.fixture(autouse=True)
+def authorizer(requests_mock):
+    matcher = re.compile("https://example.com/.*")
+    requests_mock.register_uri(
+        "GET",
+        matcher,
+        request_headers={"Authorization": "Bjørnepollett"},
+        json={"access": True},
+    )
+
+    requests_mock.register_uri(
+        "GET",
+        matcher,
+        request_headers={"Authorization": "Snusk"},
+        json={"access": False},
+    )
 
 
 @pytest.fixture
@@ -17,7 +31,7 @@ def api_gateway_event():
     """
 
     def _event(
-        principalId="jd",
+        authorization_header="Bjørnepollett",
         body=json.dumps(
             {"editionId": "datasetid/1/20190101T125959", "filename": "datastuff.txt"}
         ),
@@ -31,6 +45,7 @@ def api_gateway_event():
             "stageVariables": {},
             "stage": "dev",
             "headers": {
+                "Authorization": authorization_header,
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
                 "Accept-Encoding": "gzip, deflate, sdch",
                 "Accept-Language": "en-US,en;q=0.8",
@@ -52,7 +67,6 @@ def api_gateway_event():
             },
             "requestContext": {
                 "accountId": "123456789012",
-                "authorizer": {"principalId": f"{principalId}"},
                 "resourceId": "123456",
                 "stage": "dev",
                 "requestId": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
@@ -89,13 +103,10 @@ def test_error_response():
 
 
 def test_handler_404_when_not_authenticated(api_gateway_event):
-    event = api_gateway_event(principalId="fakeId")
+    event = api_gateway_event(authorization_header="Snusk")
     ret = handler(event, None)
     assert ret["statusCode"] == 403
-    assert (
-        json.loads(ret["body"])["message"]
-        == "Forbidden. Only the test user can do this"
-    )
+    assert json.loads(ret["body"])["message"] == "Forbidden"
 
 
 def test_handler_bad_json(api_gateway_event):
