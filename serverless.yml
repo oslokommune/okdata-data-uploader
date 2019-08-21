@@ -12,12 +12,6 @@ provider:
     serverSideEncryption: AES256
   deploymentPrefix: deploy
   environment:
-    API_URL:
-      Fn::Join:
-        - ""
-        - - "https://"
-          - Ref: "ApiGatewayRestApi"
-          - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
     GIT_REV: ${git:branch}:${git:sha1}
   iamManagedPolicies:
     - Fn::Join:
