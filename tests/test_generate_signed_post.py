@@ -98,6 +98,7 @@ def test_error_response():
     assert error_response(123, "lol") == {
         "isBase64Encoded": False,
         "statusCode": 123,
+        "headers": {"Access-Control-Allow-Origin": "*"},
         "body": json.dumps({"message": "lol"}),
     }
 
