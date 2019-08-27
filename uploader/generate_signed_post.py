@@ -22,6 +22,7 @@ log = logging.getLogger()
 log.setLevel(logging.INFO)
 
 BUCKET = os.environ["BUCKET"]
+ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
 
 
 def handler(event, context):
@@ -44,7 +45,8 @@ def handler(event, context):
     dataset, *_ = editionId.split("/")
 
     log.info(f"Upload to {editionId}")
-    if not is_owner(authorization, dataset):
+    if ENABLE_AUTH and not is_owner(authorization, dataset):
+        log.info("Access denied")
         return error_response(403, "Forbidden")
 
     try:

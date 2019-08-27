@@ -2,7 +2,7 @@ import re
 import json
 import pytest
 
-from uploader.generate_signed_post import handler
+from uploader.generate_signed_post import handler, ENABLE_AUTH
 from uploader.common import error_response
 
 
@@ -102,7 +102,8 @@ def test_error_response():
     }
 
 
-def test_handler_404_when_not_authenticated(api_gateway_event):
+@pytest.mark.skipif(not ENABLE_AUTH, reason="Auth is disabled")
+def test_handler_403_when_not_authenticated(api_gateway_event):
     event = api_gateway_event(authorization_header="Snusk")
     ret = handler(event, None)
     assert ret["statusCode"] == 403
