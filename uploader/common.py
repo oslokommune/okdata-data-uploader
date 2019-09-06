@@ -2,6 +2,7 @@ import requests
 import os
 import json
 import boto3
+from auth import SimpleAuth
 
 from uploader.errors import DataExistsError
 from botocore.client import Config
@@ -86,12 +87,13 @@ def edition_missing(editionId):
     return False
 
 
-def create_edition(editionId):
+def create_edition(event, editionId):
     dataset, version = editionId.split("/")
     edition = datetime.now().isoformat(timespec="seconds")
     data = {"edition": edition, "description": f"Data for {edition}"}
     url = f"{BASE_URL}/{dataset}/versions/{version}/editions"
-    result = requests.post(url, data=json.dumps(data))
+    req = SimpleAuth().poor_mans_delegation(event)
+    result = req.post(url, data=json.dumps(data))
     if result.status_code == 409:
         edition = data["edition"]
         raise DataExistsError(

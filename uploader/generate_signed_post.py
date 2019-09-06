@@ -16,7 +16,7 @@ from uploader.common import (
 )
 from uploader.errors import DataExistsError, InvalidDatasetEditionError
 from uploader.schema import request_schema
-from uploader.auth import is_owner
+from auth import SimpleAuth
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -41,18 +41,17 @@ def handler(event, context):
         return error_response(500, "Internal server error")
 
     editionId = body["editionId"]
-    authorization = event["headers"]["Authorization"]
     dataset, *_ = editionId.split("/")
 
     log.info(f"Upload to {editionId}")
-    if ENABLE_AUTH and not is_owner(authorization, dataset):
+    if ENABLE_AUTH and not SimpleAuth().is_owner(event, dataset):
         log.info("Access denied")
         return error_response(403, "Forbidden")
 
     try:
         edition_created = False
         if edition_missing(editionId) and validate_version(editionId):
-            body["editionId"] = create_edition(editionId)
+            body["editionId"] = create_edition(event, editionId)
             edition_created = True
 
         if not edition_created and not validate_edition(editionId):

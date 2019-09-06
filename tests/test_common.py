@@ -50,7 +50,8 @@ def test_create_edition(requests_mock):
     response = "h-eide-test2-5C5uX/versions/1/editions/2019-08-01T12:00:00"
     requests_mock.register_uri("POST", url, text=response, status_code=200)
     editionId = "h-eide-test2-5C5uX/1"
-    result = create_edition(editionId)
+    event = {"headers": {"Authorization": "bearer token"}}
+    result = create_edition(event, editionId)
     assert result == "h-eide-test2-5C5uX/versions/1/editions/2019-08-01T12:00:00"
 
 
@@ -58,9 +59,10 @@ def test_create_edition_exists(requests_mock):
     url = "https://metadata.api-test.oslo.kommune.no/dev/h-eide-test2-5C5uX/versions/1/editions"
     response = "h-eide-test2-5C5uX/versions/1/editions/2019-08-01T12:00:00"
     requests_mock.register_uri("POST", url, text=response, status_code=409)
+    event = {"headers": {"Authorization": "bearer token"}}
     try:
         editionId = "h-eide-test2-5C5uX/1"
-        create_edition(editionId)
+        create_edition(event, editionId)
     except DataExistsError:
         assert True
 

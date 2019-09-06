@@ -58,7 +58,7 @@ functions:
             arn: arn:aws:lambda:${self:provider.region}:***REMOVED***:function:keycloak-authorizer-${self:provider.stage}-authenticate
             resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
-            identityValidationExpression: "^Bearer [-0-9a-zA-Z\\._]*$"
+            identityValidationExpression: "^(b|B)earer [-0-9a-zA-Z\\._]*$"
             type: token
           documentation:
             summary: Generate a signed POST URL
