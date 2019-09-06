@@ -16,7 +16,12 @@ provider:
     BUCKET: "ok-origo-dataplatform-${self:provider.stage}"
     METADATA_API: ${ssm:/dataplatform/metadata-api/url}
     AUTHORIZER_API: ${ssm:/dataplatform/simple-dataset-authorizer/url}
-    ENABLE_AUTH: false
+    ENABLE_AUTH: true
+    KEYCLOAK_SERVER: ${ssm:/keycloak/client/server}
+    KEYCLOAK_REALM: api-catalog
+    CLIENT_ID: data-uploader
+    CLIENT_SECRET: ${ssm:/dataplatform/apis/data-uploader/auth/client_secret~true}
+
   iamManagedPolicies:
     - Fn::Join:
         - ":"
