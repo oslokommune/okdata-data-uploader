@@ -14,6 +14,7 @@
   "devDependencies": {
     "prettier": "^1.16.0",
     "serverless-aws-documentation": "^1.1.0",
+    "serverless-pseudo-parameters": "^2.4.0",
     "serverless-python-requirements": "^5.0.0",
     "serverless-plugin-git-variables": "^3.3.2"
   }

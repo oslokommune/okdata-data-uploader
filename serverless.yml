@@ -21,13 +21,8 @@ provider:
     KEYCLOAK_REALM: api-catalog
     CLIENT_ID: data-uploader
     CLIENT_SECRET: ${ssm:/dataplatform/apis/data-uploader/auth/client_secret~true}
-
   iamManagedPolicies:
-    - Fn::Join:
-        - ":"
-        - - "arn:aws:iam:"
-          - Ref: "AWS::AccountId"
-          - "policy/data-uploader-policy"
+    - "arn:aws:iam::#{AWS::AccountId}:policy/data-uploader-policy"
   tags:
     GIT_REV: ${git:branch}:${git:sha1}
 
@@ -35,11 +30,11 @@ plugins:
   - serverless-aws-documentation
   - serverless-python-requirements
   - serverless-plugin-git-variables
+  - serverless-pseudo-parameters
 
 resources:
-  Description: >
+  Description: |
     ${self:service} ${git:branch}:${git:sha1}
-
     ${git:message}
 
 package:
@@ -60,7 +55,7 @@ functions:
           method: post
           cors: true
           authorizer:
-            arn: arn:aws:lambda:${self:provider.region}:***REMOVED***:function:keycloak-authorizer-${self:provider.stage}-authenticate
+            arn: arn:aws:lambda:${self:provider.region}:#{AWS::AccountId}:function:keycloak-authorizer-${self:provider.stage}-authenticate
             resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             identityValidationExpression: "^(b|B)earer [-0-9a-zA-Z\\._]*$"
