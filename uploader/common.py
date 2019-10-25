@@ -2,8 +2,9 @@ import requests
 import os
 import json
 import boto3
-from auth import SimpleAuth
 
+from auth import SimpleAuth
+from dataplatform.awslambda.logging import log_duration
 from uploader.errors import DataExistsError
 from botocore.client import Config
 from datetime import datetime
@@ -58,7 +59,7 @@ def validate_edition(editionId):
     # If this URL exists and the data there matches what we get in from
     # erditionId, then we know that editionId has been created by the metadata API
     url = f"{BASE_URL}/datasets/{dataset}/versions/{version}/editions/{edition}"
-    response = requests.get(url)
+    response = log_duration(lambda: requests.get(url), "requests_validate_edition_ms")
     data = response.json()
     if "Id" in data and editionId == data["Id"]:
         return True
@@ -69,7 +70,7 @@ def validate_edition(editionId):
 def validate_version(editionId):
     dataset, version = editionId.split("/")
     url = f"{BASE_URL}/datasets/{dataset}/versions/{version}"
-    response = requests.get(url)
+    response = log_duration(lambda: requests.get(url), "requests_validate_version_ms")
     data = response.json()
     if "Id" in data and editionId == data["Id"]:
         return True
