@@ -54,7 +54,6 @@ def handler(event, context):
         log_add(simpleAuth_error=msg)
         return error_response(403, "Forbidden")
 
-
     try:
 
         edition_created = False
