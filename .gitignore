@@ -17,6 +17,7 @@ var/
 node_modules/
 __pycache__
 .tox
+.vscode
 
 # Serverless directories
 .serverless
@@ -25,5 +26,6 @@ __pycache__
 .idea/
 
 # Virtual environment
-venv/
+.venv/
 env/
+
