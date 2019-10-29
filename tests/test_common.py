@@ -1,12 +1,40 @@
 import json
 
 from uploader.common import (
+    get_confidentiality,
     validate_edition,
     validate_version,
     edition_missing,
     create_edition,
 )
 from uploader.errors import DataExistsError
+
+
+def test_validate_confidentiality_red(requests_mock):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/confidentiality-red"
+    response = json.dumps({"confidentiality": "red"})
+    requests_mock.register_uri("GET", url, text=response, status_code=200)
+    datasetId = "confidentiality-red"
+    result = get_confidentiality(datasetId)
+    assert result == "red"
+
+
+def test_validate_confidentiality_green(requests_mock):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/confidentiality-green"
+    response = json.dumps({"confidentiality": "green"})
+    requests_mock.register_uri("GET", url, text=response, status_code=200)
+    datasetId = "confidentiality-green"
+    result = get_confidentiality(datasetId)
+    assert result == "green"
+
+
+def test_validate_confidentiality_empty(requests_mock):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/confidentiality-empty"
+    response = json.dumps({})
+    requests_mock.register_uri("GET", url, text=response, status_code=200)
+    datasetId = "confidentiality-empty"
+    result = get_confidentiality(datasetId)
+    assert result == "green"
 
 
 def test_validate_edition_correct_edition(requests_mock):
