@@ -17,23 +17,23 @@ init:
 format:
 	python3 -m black .
 
-.PHONY: get-layer-deps
-get-layer-deps:
-	python3 -m pip install --extra-index-url ***REMOVED*** dataplatform-base-layer --upgrade
-
-
 .PHONY: test
 test:
 	python3 -m tox -p auto
 
 .PHONY: deploy
 deploy: init format test login-dev
-	sls deploy --stage dev --aws-profile $(.DEV_PROFILE)
+	@echo "\nDeploying to stage: $${STAGE:-dev}\n"
+	sls deploy --stage $${STAGE:-dev} --aws-profile $(.DEV_PROFILE)
 
 .PHONY: deploy-prod
 deploy-prod: init format is-git-clean test login-prod
 	sls deploy --stage prod --aws-profile $(.PROD_PROFILE)
 	sls downloadDocumentation --outputFileName swagger.yaml --stage prod --aws-profile $(.PROD_PROFILE)
+
+.PHONY: undeploy
+undeploy: login-dev
+	sls remove --stage $${STAGE} --aws-profile $(.DEV_PROFILE)
 
 .PHONY: login-dev
 login-dev:

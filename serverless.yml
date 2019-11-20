@@ -8,12 +8,12 @@ provider:
   region: ${opt:region, 'eu-west-1'}
   stage: ${opt:stage, 'dev'}
   deploymentBucket:
-    name: ok-origo-dataplatform-config-${self:provider.stage}
+    name: ok-origo-dataplatform-config-${self:custom.resolvedStage}
     serverSideEncryption: AES256
   deploymentPrefix: deploy
   environment:
     GIT_REV: ${git:branch}:${git:sha1}
-    BUCKET: "ok-origo-dataplatform-${self:provider.stage}"
+    BUCKET: ok-origo-dataplatform-${self:custom.resolvedStage}
     METADATA_API: ${ssm:/dataplatform/metadata-api/url}
     AUTHORIZER_API: ${ssm:/dataplatform/simple-dataset-authorizer/url}
     ENABLE_AUTH: true
@@ -55,7 +55,7 @@ functions:
           method: post
           cors: true
           authorizer:
-            arn: arn:aws:lambda:${self:provider.region}:#{AWS::AccountId}:function:keycloak-authorizer-${self:provider.stage}-authenticate
+            arn: arn:aws:lambda:${self:provider.region}:#{AWS::AccountId}:function:keycloak-authorizer-${self:custom.resolvedStage}-authenticate
             resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             identityValidationExpression: "^(b|B)earer [-0-9a-zA-Z\\._]*$"
@@ -103,3 +103,7 @@ custom:
         contentType: "application/json"
         schema: ${file(doc/models/error.json)}
   exportGitVariables: false
+  resolvedStage: ${self:custom._stages.${self:provider.stage}, 'dev'}
+  _stages:
+    prod: prod
+    dev: dev
