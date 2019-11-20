@@ -7,28 +7,55 @@ Returns a presigned URL and form fields that can be used to POST a file to S3.
 1. [Install Serverless Framework](https://serverless.com/framework/docs/getting-started/)
 2. Install plugins:
 ```
-npm install
+make init
+```
+
+### Setup for development
+
+Grab yourselv a virtualenv:
+```
+python3.7 -m venv .venv
+```
+
+To activate the virtualenv run:
+```
+source ./venv/bin/activate
+```
+
+Inside the virtualenv you can install packages locally:
+```
+pip install -r requirements.txt
+```
+
+To exit from a virtualenv run:
+```
+deactivate
 ```
 
 ## Running tests
 
-Tests are run using [tox](https://pypi.org/project/tox/).
+```
+$ make test
+```
 
-```
-$ tox -p auto
-```
+Tests are run using [tox](https://pypi.org/project/tox/).
 
 ## Deploy
 
 With `npm` and `serverless` installed:
 
-`serverless deploy`
+`make deploy`
 
 ## Code fromatting
 
- - Use `black` to format python: `black .`
+```
+make format
+```
+
+Runs [black](https://black.readthedocs.io/en/stable/) to format python code.
 
 ## Upload size
+
 A single PUT can be up to 5GB for S3 signed URLs (and is then our current limitation), over that and a multi-part upload must be created
 
 ## TODO
