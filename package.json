@@ -3,19 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "private": true,
-  "repository": {
-    "type": "git",
-    "url": "git@github.oslo.kommune.no:origodigi/data-uploader.git"
-  },
-  "scripts": {
-    "lint": "prettier -l '{doc,uploader,tests}/**/*.{json,yml,js,html}'",
-    "auto-lint": "prettier --write '{doc,uploader,tests}/**/*.{json,yml,js,html}'"
-  },
   "devDependencies": {
-    "prettier": "^1.16.0",
     "serverless-aws-documentation": "^1.1.0",
+    "serverless-plugin-git-variables": "^3.3.3",
     "serverless-pseudo-parameters": "^2.4.0",
-    "serverless-python-requirements": "^5.0.0",
-    "serverless-plugin-git-variables": "^3.3.2"
+    "serverless-python-requirements": "^5.0.1"
   }
 }
