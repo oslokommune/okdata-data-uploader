@@ -34,6 +34,7 @@ plugins:
   - serverless-python-requirements
   - serverless-plugin-git-variables
   - serverless-pseudo-parameters
+  - serverless-es-logs
 
 resources:
   Description: |
@@ -86,6 +87,10 @@ custom:
     dockerizePip: non-linux
     slim: true
     usePoetry: false
+  esLogs:
+    endpoint: ${ssm:/dataplatform/elasticsearch/endpoint}
+    index: data-uploader
+    filterPattern: '{ $.function_name = "*" }'
   documentation:
     info:
       title: Data Uploader
