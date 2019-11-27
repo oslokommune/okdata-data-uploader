@@ -85,7 +85,7 @@ functions:
 custom:
   pythonRequirements:
     dockerizePip: non-linux
-    slim: true
+    slim: false
     usePoetry: false
   esLogs:
     endpoint: ${ssm:/dataplatform/elasticsearch/endpoint}
