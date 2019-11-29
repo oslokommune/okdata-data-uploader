@@ -7,13 +7,16 @@ provider:
   runtime: python3.7
   region: ${opt:region, 'eu-west-1'}
   stage: ${opt:stage, 'dev'}
+  tracing:
+    apiGateway: true
+    lambda: true
   deploymentBucket:
-    name: ok-origo-dataplatform-config-${self:provider.stage}
+    name: ok-origo-dataplatform-config-${self:custom.resolvedStage}
     serverSideEncryption: AES256
   deploymentPrefix: deploy
   environment:
     GIT_REV: ${git:branch}:${git:sha1}
-    BUCKET: "ok-origo-dataplatform-${self:provider.stage}"
+    BUCKET: ok-origo-dataplatform-${self:custom.resolvedStage}
     METADATA_API: ${ssm:/dataplatform/metadata-api/url}
     AUTHORIZER_API: ${ssm:/dataplatform/simple-dataset-authorizer/url}
     ENABLE_AUTH: true
@@ -31,6 +34,7 @@ plugins:
   - serverless-python-requirements
   - serverless-plugin-git-variables
   - serverless-pseudo-parameters
+  - serverless-es-logs
 
 resources:
   Description: |
@@ -55,7 +59,7 @@ functions:
           method: post
           cors: true
           authorizer:
-            arn: arn:aws:lambda:${self:provider.region}:#{AWS::AccountId}:function:keycloak-authorizer-${self:provider.stage}-authenticate
+            arn: arn:aws:lambda:${self:provider.region}:#{AWS::AccountId}:function:keycloak-authorizer-${self:custom.resolvedStage}-authenticate
             resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             identityValidationExpression: "^(b|B)earer [-0-9a-zA-Z\\._]*$"
@@ -81,8 +85,12 @@ functions:
 custom:
   pythonRequirements:
     dockerizePip: non-linux
-    slim: true
+    slim: false
     usePoetry: false
+  esLogs:
+    endpoint: ${ssm:/dataplatform/elasticsearch/endpoint}
+    index: data-uploader
+    filterPattern: '{ $.function_name = "*" }'
   documentation:
     info:
       title: Data Uploader
@@ -103,3 +111,7 @@ custom:
         contentType: "application/json"
         schema: ${file(doc/models/error.json)}
   exportGitVariables: false
+  resolvedStage: ${self:custom._stages.${self:provider.stage}, 'dev'}
+  _stages:
+    prod: prod
+    dev: dev

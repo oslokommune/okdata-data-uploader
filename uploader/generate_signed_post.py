@@ -1,7 +1,7 @@
 import os
 import json
-import logging
 
+from aws_xray_sdk.core import patch_all, xray_recorder
 from dataplatform.awslambda.logging import logging_wrapper, log_add
 from jsonschema import validate, ValidationError, SchemaError
 from json.decoder import JSONDecodeError
@@ -19,65 +19,61 @@ from uploader.errors import DataExistsError, InvalidDatasetEditionError
 from uploader.schema import request_schema
 from auth import SimpleAuth
 
-log = logging.getLogger()
-log.setLevel(logging.INFO)
+patch_all()
 
 BUCKET = os.environ["BUCKET"]
 ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
 
 
-@logging_wrapper
+@logging_wrapper("data-uploader")
+@xray_recorder.capture("generate_signed_post")
 def handler(event, context):
     body = None
     try:
         body = json.loads(event["body"])
         validate(body, request_schema)
     except JSONDecodeError as e:
-        log.exception(f"Body is not a valid JSON document: {e}")
-        log_add(validate_decode_error=e)
+        log_add(exc_info=e)
         return error_response(400, "Body is not a valid JSON document")
     except ValidationError as e:
-        log.exception(f"JSON document does not conform to the given schema: {e}")
+        log_add(exc_info=e)
         return error_response(400, "JSON document does not conform to the given schema")
     except SchemaError as e:
-        log.exception(f"Schema error: {e}")
+        log_add(exc_info=e)
         return error_response(500, "Internal server error")
 
-    editionId = body["editionId"]
-    dataset, *_ = editionId.split("/")
+    log_add(filename=body["filename"], edition_id=body["editionId"])
 
-    log.info(f"Upload to {editionId}")
-    log_add(edition_id=editionId)
-    if ENABLE_AUTH and not SimpleAuth().is_owner(event, dataset):
-        log.info("Access denied")
-        msg = "Access denied - Forbidden"
-        log_add(simpleAuth_error=msg)
+    maybe_edition = body["editionId"]
+    dataset, *_ = maybe_edition.split("/")
+
+    is_owner = SimpleAuth().is_owner(event, dataset)
+    log_add(enable_auth=ENABLE_AUTH, is_owner=is_owner)
+
+    if ENABLE_AUTH and not is_owner:
         return error_response(403, "Forbidden")
 
     try:
-
         edition_created = False
-        if edition_missing(editionId) and validate_version(editionId):
-            body["editionId"] = create_edition(event, editionId)
+        if edition_missing(maybe_edition) and validate_version(maybe_edition):
+            body["editionId"] = create_edition(event, maybe_edition)
             edition_created = True
 
-        if not edition_created and not validate_edition(editionId):
+        log_add(edition_id=body["editionId"], edition_created=edition_created)
+
+        if not edition_created and not validate_edition(maybe_edition):
             raise InvalidDatasetEditionError()
+
     except InvalidDatasetEditionError:
-        log.exception(f"Trying to insert invalid dataset edition: {body}")
-        log_add(dataset_invalid_edition=body)
-        return error_response(403, "Incorrect dataset edition")
-    except DataExistsError as e:
-        log.exception(f"Data already exists: {e}")
-        log_add(dataset_already_exist=e)
-        return error_response(400, "Could not create data as resource already exists")
+        return error_response(400, "Incorrect dataset edition")
+    except DataExistsError:
+        return error_response(409, "Could not create data as resource already exists")
     except Exception as e:
-        log.exception(f"Unexpected Exception found : {e}")
-        log_add(dataset_unexpected_exeption=e)
-        return error_response(400, "Could not complete request, please try again later")
+        log_add(exc_info=e)
+        return error_response(500, "Could not complete request, please try again later")
 
     s3path = generate_s3_path(**body)
-    log.info(f"S3 key: {s3path}")
+    log_add(generated_s3_path=s3path)
 
     post_response = generate_signed_post(BUCKET, s3path)
 

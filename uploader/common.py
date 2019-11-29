@@ -30,9 +30,13 @@ def generate_signed_post(bucket, key):
     fields = {"acl": "private"}
     conditions = [{"acl": "private"}]
 
-    return s3.generate_presigned_post(
-        bucket, key, Fields=fields, Conditions=conditions, ExpiresIn=300
+    presigned_post = log_duration(
+        lambda: s3.generate_presigned_post(
+            bucket, key, Fields=fields, Conditions=conditions, ExpiresIn=300
+        ),
+        "duration_generate_presigned_post",
     )
+    return presigned_post
 
 
 def error_response(status, message):
