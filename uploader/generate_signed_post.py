@@ -25,7 +25,7 @@ BUCKET = os.environ["BUCKET"]
 ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
 
 
-@logging_wrapper("data_uploader")
+@logging_wrapper("data-uploader")
 @xray_recorder.capture("generate_signed_post")
 def handler(event, context):
     body = None
