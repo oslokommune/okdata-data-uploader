@@ -14,6 +14,7 @@ from uploader.common import (
     create_edition,
     generate_s3_path,
     generate_signed_post,
+    generate_post_for_status_api,
 )
 from uploader.errors import DataExistsError, InvalidDatasetEditionError
 from uploader.schema import request_schema
@@ -74,6 +75,8 @@ def handler(event, context):
 
     s3path = generate_s3_path(**body)
     log_add(generated_s3_path=s3path)
+
+    generate_post_for_status_api(s3path, dataset)
 
     post_response = generate_signed_post(BUCKET, s3path)
 

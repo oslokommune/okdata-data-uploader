@@ -2,12 +2,17 @@ import requests
 import os
 import json
 import boto3
+import logging
+import uuid
 
 from auth import SimpleAuth
 from dataplatform.awslambda.logging import log_duration
 from uploader.errors import DataExistsError
 from botocore.client import Config
 from datetime import datetime
+
+log = logging.getLogger()
+log.setLevel(logging.INFO)
 
 BASE_URL = os.environ["METADATA_API"]
 
@@ -37,6 +42,25 @@ def generate_signed_post(bucket, key):
         "duration_generate_presigned_post",
     )
     return presigned_post
+
+
+def generate_uuid(s3path, dataset):
+    new_uuid = uuid.uuid4()
+    return f"{dataset}-{new_uuid}"[0:80]
+
+
+def generate_post_for_status_api(s3path, dataset):
+    log.info(
+        f"Generating post for status-api for dataset {dataset} with s3path: {s3path}"
+    )
+
+    status_api_url = "https://***REMOVED***.execute-api.eu-west-1.amazonaws.com/dev/status/"  # MÅ SETTES TIL OSLO-KOMMUNE-URL NÅR KLART
+    request_url = status_api_url + generate_uuid(s3path, dataset)
+    response = requests.post(request_url)
+    if response.code == 200:
+        log.info("Successfully created posted status to status_api")
+    else:
+        log.info("Was not able to create posted status to status_api")
 
 
 def error_response(status, message):

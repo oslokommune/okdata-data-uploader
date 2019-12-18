@@ -23,6 +23,14 @@ def authorizer(requests_mock):
         json={"access": False},
     )
 
+    status_matcher = re.compile("https://***REMOVED***.execute-api.eu-west-1.amazonaws.com/dev/status/*")
+    requests_mock.register_uri(
+        "POST",
+        status_matcher,
+        request_headers={"Authorization": "Snusk"},
+        json={"access": False},
+    )
+
 
 @pytest.fixture
 def api_gateway_event():
