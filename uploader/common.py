@@ -28,7 +28,8 @@ def generate_signed_post(bucket, key):
     s3 = boto3.client(
         "s3",
         region_name="eu-west-1",
-        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+        config=Config(signature_version="s3v4", s3={
+                      "addressing_style": "path"}),
     )
 
     # TODO: Add more conditions!
@@ -54,10 +55,11 @@ def generate_post_for_status_api(s3path, dataset):
         f"Generating post for status-api for dataset {dataset} with s3path: {s3path}"
     )
 
-    status_api_url = "https://***REMOVED***.execute-api.eu-west-1.amazonaws.com/dev/status/"  # MÅ SETTES TIL OSLO-KOMMUNE-URL NÅR KLART
+    # MÅ SETTES TIL OSLO-KOMMUNE-URL NÅR KLART
+    status_api_url = "https://***REMOVED***.execute-api.eu-west-1.amazonaws.com/dev/status/"
     request_url = status_api_url + generate_uuid(s3path, dataset)
     response = requests.post(request_url)
-    if response.code == 200:
+    if response.ok:
         log.info("Successfully created posted status to status_api")
     else:
         log.info("Was not able to create posted status to status_api")
@@ -87,7 +89,8 @@ def validate_edition(editionId):
     # If this URL exists and the data there matches what we get in from
     # erditionId, then we know that editionId has been created by the metadata API
     url = f"{BASE_URL}/datasets/{dataset}/versions/{version}/editions/{edition}"
-    response = log_duration(lambda: requests.get(url), "requests_validate_edition_ms")
+    response = log_duration(lambda: requests.get(
+        url), "requests_validate_edition_ms")
     data = response.json()
     if "Id" in data and editionId == data["Id"]:
         return True
@@ -98,7 +101,8 @@ def validate_edition(editionId):
 def validate_version(editionId):
     dataset, version = editionId.split("/")
     url = f"{BASE_URL}/datasets/{dataset}/versions/{version}"
-    response = log_duration(lambda: requests.get(url), "requests_validate_version_ms")
+    response = log_duration(lambda: requests.get(
+        url), "requests_validate_version_ms")
     data = response.json()
     if "Id" in data and editionId == data["Id"]:
         return True
