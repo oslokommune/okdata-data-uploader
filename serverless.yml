@@ -89,7 +89,7 @@ custom:
     usePoetry: false
   esLogs:
     endpoint: ${ssm:/dataplatform/elasticsearch/endpoint}
-    index: data-uploader
+    index: dataplatform-services
     filterPattern: '{ $.function_name = "*" }'
   documentation:
     info:
