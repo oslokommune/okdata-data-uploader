@@ -56,9 +56,23 @@ def generate_post_for_status_api(s3path, dataset):
     )
 
     # MÅ SETTES TIL OSLO-KOMMUNE-URL NÅR KLART
-    status_api_url = "https://***REMOVED***.execute-api.eu-west-1.amazonaws.com/dev/status/"
-    request_url = status_api_url + generate_uuid(s3path, dataset)
-    response = requests.post(request_url)
+    status_api_url = (
+        "https://***REMOVED***.execute-api.eu-west-1.amazonaws.com/dev/status/"
+    )
+    datetime_now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    request_body = {
+        "application": "dataset",
+        "application_id": dataset,
+        "handler": "data-uploader",
+        "user": "data-uploader",
+        "date_started": datetime_now,
+        "date_end": "N/A",
+        "body": "N/A",
+    }
+
+    response = requests.post(status_api_url, request_body)
+    log.info(
+        f"Trying to upload {request_body} to status-api. Response: {response}")
     if response.ok:
         log.info("Successfully created posted status to status_api")
     else:

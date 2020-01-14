@@ -115,8 +115,7 @@ def test_handler_bad_json(api_gateway_event):
     event = api_gateway_event(body='"} invalid json')
     ret = handler(event, None)
     assert ret["statusCode"] == 400
-    assert json.loads(ret["body"])[
-        "message"] == "Body is not a valid JSON document"
+    assert json.loads(ret["body"])["message"] == "Body is not a valid JSON document"
 
 
 def test_handler_invalid_json(api_gateway_event):
