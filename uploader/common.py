@@ -28,7 +28,8 @@ def generate_signed_post(bucket, key):
     s3 = boto3.client(
         "s3",
         region_name="eu-west-1",
-        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+        config=Config(signature_version="s3v4", s3={
+                      "addressing_style": "path"}),
     )
 
     # TODO: Add more conditions!
@@ -72,11 +73,11 @@ def generate_post_for_status_api(s3path, dataset):
     )
 
     response = requests.post(status_api_url, request_body)
-    log.info(f"Trying to upload {request_body} to status-api. Response: {response}")
     if response.ok:
         log.info("Successfully created posted status to status_api")
     else:
         log.info("Was not able to create posted status to status_api")
+    return json.loads(response.text)
 
 
 def error_response(status, message):
@@ -103,7 +104,8 @@ def validate_edition(editionId):
     # If this URL exists and the data there matches what we get in from
     # erditionId, then we know that editionId has been created by the metadata API
     url = f"{BASE_URL}/datasets/{dataset}/versions/{version}/editions/{edition}"
-    response = log_duration(lambda: requests.get(url), "requests_validate_edition_ms")
+    response = log_duration(lambda: requests.get(
+        url), "requests_validate_edition_ms")
     data = response.json()
     if "Id" in data and editionId == data["Id"]:
         return True
@@ -114,7 +116,8 @@ def validate_edition(editionId):
 def validate_version(editionId):
     dataset, version = editionId.split("/")
     url = f"{BASE_URL}/datasets/{dataset}/versions/{version}"
-    response = log_duration(lambda: requests.get(url), "requests_validate_version_ms")
+    response = log_duration(lambda: requests.get(
+        url), "requests_validate_version_ms")
     data = response.json()
     if "Id" in data and editionId == data["Id"]:
         return True
