@@ -81,6 +81,8 @@ def handler(event, context):
     post_response = generate_signed_post(BUCKET, s3path)
     post_response["status_response"] = status_response
 
+    log_add(full_post_response=post_response)
+
     return {
         "isBase64Encoded": False,
         "statusCode": 200,

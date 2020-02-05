@@ -69,6 +69,7 @@ def generate_post_for_status_api(s3path, dataset):
             "date_started": datetime_now,
             "date_end": "N/A",
             "body": "N/A",
+            "s3path": s3path,
         }
     )
 
