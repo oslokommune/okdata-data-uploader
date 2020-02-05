@@ -24,6 +24,7 @@ provider:
     KEYCLOAK_REALM: api-catalog
     CLIENT_ID: data-uploader
     CLIENT_SECRET: ${ssm:/dataplatform/apis/data-uploader/auth/client_secret~true}
+    STATUS_API_URL: ${ssm:/dataplatform/status-api/url}
   iamManagedPolicies:
     - "arn:aws:iam::#{AWS::AccountId}:policy/data-uploader-policy"
   tags:

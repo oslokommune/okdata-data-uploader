@@ -137,7 +137,7 @@ def test_handler(api_gateway_event, requests_mock):
     response = json.dumps({"Id": "datasetid/1/20190101T125959"})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
-    url = "https://***REMOVED***.execute-api.eu-west-1.amazonaws.com/dev/status/*"
+    url = "https://api.data-dev.oslo.systems/status-api/status/*"
     matcher = re.compile(url)
     response = json.dumps({"Id": "datasetid/1/20190101T125959"})
     requests_mock.register_uri("POST", matcher, text=response, status_code=200)
@@ -156,7 +156,7 @@ def test_s3_confidentiality_path_yellow(api_gateway_event, requests_mock):
     response = json.dumps({"Id": "alder-distribusjon-status/1/20190101T125959"})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
-    url = "https://***REMOVED***.execute-api.eu-west-1.amazonaws.com/dev/status/*"
+    url = "https://api.data-dev.oslo.systems/status-api/status/*"
     matcher = re.compile(url)
     response = json.dumps({"Id": "datasetid/1/20190101T125959"})
     requests_mock.register_uri("POST", matcher, text=response, status_code=200)
@@ -181,7 +181,7 @@ def test_s3_confidentiality_path_green(api_gateway_event, requests_mock):
     response = json.dumps({"Id": "badetemperatur/1/20190101T125959"})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
-    url = "https://***REMOVED***.execute-api.eu-west-1.amazonaws.com/dev/status/*"
+    url = "https://api.data-dev.oslo.systems/status-api/status/*"
     matcher = re.compile(url)
     response = json.dumps({"Id": "datasetid/1/20190101T125959"})
     requests_mock.register_uri("POST", matcher, text=response, status_code=200)
@@ -208,7 +208,7 @@ def test_s3_confidentiality_path_no_confidentiality_response(
     response = json.dumps({"Id": "badetemperatur/1/20190101T125959"})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
-    url = "https://***REMOVED***.execute-api.eu-west-1.amazonaws.com/dev/status/*"
+    url = "https://api.data-dev.oslo.systems/status-api/status/*"
     matcher = re.compile(url)
     response = json.dumps({"Id": "datasetid/1/20190101T125959"})
     requests_mock.register_uri("POST", matcher, text=response, status_code=200)
