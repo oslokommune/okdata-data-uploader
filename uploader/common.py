@@ -48,7 +48,7 @@ def generate_uuid(s3path, dataset):
 
 
 def generate_post_for_status_api(s3path, dataset):
-    log_add(dataset_id=dataset, s3_path=s3path)
+    log_add(dataset_id=dataset, s3path=s3path)
 
     datetime_now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     request_body = json.dumps(
@@ -60,7 +60,7 @@ def generate_post_for_status_api(s3path, dataset):
             "date_started": datetime_now,
             "date_end": "N/A",
             "body": "N/A",
-            "s3_path": s3path,
+            "s3path": s3path,
         }
     )
 
