@@ -12,7 +12,7 @@ from datetime import datetime
 
 
 BASE_URL = os.environ["METADATA_API"]
-STATUS_API_URL = os.environ["STATUS_API_URL"]
+STATUS_API = os.environ["STATUS_API"]
 
 
 def generate_s3_path(editionId, filename):
@@ -64,7 +64,7 @@ def generate_post_for_status_api(s3path, dataset):
         }
     )
 
-    response = requests.post(STATUS_API_URL, request_body)
+    response = requests.post(STATUS_API, request_body)
     return json.loads(response.text)
 
 
