@@ -18,7 +18,7 @@ STATUS_API = os.environ["STATUS_API"]
 def generate_s3_path(editionId, filename):
     dataset, version, edition = editionId.split("/")
     confidentiality = get_confidentiality(dataset)
-    return f"incoming/{confidentiality}/{dataset}/version={version}/edition={edition}/{filename}"
+    return f"raw/{confidentiality}/{dataset}/version={version}/edition={edition}/{filename}"
 
 
 def generate_signed_post(bucket, key):
