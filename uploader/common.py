@@ -47,7 +47,7 @@ def generate_uuid(s3path, dataset):
     return f"{dataset}-{new_uuid}"[0:80]
 
 
-def generate_post_for_status_api(s3path, dataset):
+def generate_post_for_status_api(event, s3path, dataset):
     log_add(dataset_id=dataset, s3path=s3path)
 
     datetime_now = datetime.utcnow().isoformat()
@@ -64,7 +64,8 @@ def generate_post_for_status_api(s3path, dataset):
         }
     )
 
-    response = requests.post(STATUS_API, request_body)
+    req = SimpleAuth().poor_mans_delegation(event)
+    response = req.post(STATUS_API, request_body)
     return json.loads(response.text)
 
 

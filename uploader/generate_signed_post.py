@@ -76,7 +76,7 @@ def handler(event, context):
     s3path = generate_s3_path(**body)
     log_add(generated_s3_path=s3path)
 
-    status_response = generate_post_for_status_api(s3path, dataset)
+    status_response = generate_post_for_status_api(event, s3path, dataset)
 
     post_response = generate_signed_post(BUCKET, s3path)
     post_response["status_response"] = status_response
