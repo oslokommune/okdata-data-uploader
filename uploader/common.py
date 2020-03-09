@@ -12,7 +12,7 @@ from datetime import datetime
 
 
 BASE_URL = os.environ["METADATA_API"]
-STATUS_API = os.environ["STATUS_API"]
+API_GATEWAY_URL = os.environ["API_GATEWAY_URL"]
 
 
 def generate_s3_path(editionId, filename):
@@ -65,7 +65,8 @@ def generate_post_for_status_api(event, s3path, dataset):
     )
 
     req = SimpleAuth().poor_mans_delegation(event)
-    response = req.post(STATUS_API, request_body)
+    url = f"{API_GATEWAY_URL}/status-api/status"
+    response = req.post(url, request_body)
     return json.loads(response.text)
 
 
