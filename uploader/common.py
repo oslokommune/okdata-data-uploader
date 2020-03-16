@@ -64,7 +64,8 @@ def generate_post_for_status_api(event, s3path, dataset):
         }
     )
 
-    req = SimpleAuth().poor_mans_delegation(event)
+    access_token = event["headers"]["Authorization"].split(" ")[-1]
+    req = SimpleAuth().poor_mans_delegation(access_token)
     url = f"{API_GATEWAY_URL}/status-api/status"
     response = req.post(url, request_body)
     return json.loads(response.text)
@@ -128,7 +129,8 @@ def create_edition(event, editionId):
     edition = datetime.now().isoformat(timespec="seconds")
     data = {"edition": edition, "description": f"Data for {edition}"}
     url = f"{BASE_URL}/{dataset}/versions/{version}/editions"
-    req = SimpleAuth().poor_mans_delegation(event)
+    access_token = event["headers"]["Authorization"].split(" ")[-1]
+    req = SimpleAuth().poor_mans_delegation(access_token)
     result = req.post(url, data=json.dumps(data))
     if result.status_code == 409:
         edition = data["edition"]
