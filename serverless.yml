@@ -53,6 +53,7 @@ package:
 functions:
   generate_signed_post:
     handler: uploader.generate_signed_post.handler
+    timeout: 30
     layers:
       - ${ssm:/dataplatform/python-base-lambda-layer/arn}
     events:
