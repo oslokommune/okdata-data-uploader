@@ -20,7 +20,7 @@ String deployDev = """
                 """
 
 PythonConfiguration.instance.setContainerRepository("container-registry.oslo.kommune.no/python-37-serverless")
-PythonConfiguration.instance.setPythonVersion("0.2.2")
+PythonConfiguration.instance.setPythonVersion("latest")
 
 PythonConfiguration.instance.addSecretEnvVar("NEXUS_PASSWORD", "nexus-credentials", "password")
 PythonConfiguration.instance.addSecretEnvVar("NEXUS_USERNAME", "nexus-credentials", "username")
