@@ -1,11 +1,13 @@
 import json
 
 from uploader.common import (
+    get_dataset,
     get_confidentiality,
     validate_edition,
     validate_version,
     edition_missing,
     create_edition,
+    generate_s3_path,
 )
 from uploader.errors import DataExistsError
 
@@ -15,7 +17,8 @@ def test_validate_confidentiality_red(requests_mock):
     response = json.dumps({"confidentiality": "red"})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
     datasetId = "confidentiality-red"
-    result = get_confidentiality(datasetId)
+    dataset_data = get_dataset(datasetId)
+    result = get_confidentiality(dataset_data)
     assert result == "red"
 
 
@@ -24,7 +27,8 @@ def test_validate_confidentiality_green(requests_mock):
     response = json.dumps({"confidentiality": "green"})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
     datasetId = "confidentiality-green"
-    result = get_confidentiality(datasetId)
+    dataset_data = get_dataset(datasetId)
+    result = get_confidentiality(dataset_data)
     assert result == "green"
 
 
@@ -33,8 +37,33 @@ def test_validate_confidentiality_empty(requests_mock):
     response = json.dumps({})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
     datasetId = "confidentiality-empty"
-    result = get_confidentiality(datasetId)
+    dataset_data = get_dataset(datasetId)
+    result = get_confidentiality(dataset_data)
     assert result == "green"
+
+
+def test_generate_s3_path_parent_id_not_in_upload_path(requests_mock):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/my-dataset"
+    response = json.dumps({"confidentiality": "green"})
+    requests_mock.register_uri("GET", url, text=response, status_code=200)
+    editionId = "my-dataset/1/20200501"
+    filename = "hello-world.csv"
+    path = generate_s3_path(editionId, filename)
+    res = "raw/green/my-dataset/version=1/edition=20200501/hello-world.csv"
+    assert path == res
+
+
+def test_generate_s3_path_parent_id_in_upload_path(requests_mock):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/my-dataset"
+    response = json.dumps(
+        {"confidentiality": "green", "parent_id": "my-parent-dataset"}
+    )
+    requests_mock.register_uri("GET", url, text=response, status_code=200)
+    editionId = "my-dataset/1/20200501"
+    filename = "hello-world.csv"
+    path = generate_s3_path(editionId, filename)
+    res = "raw/green/my-parent-dataset/my-dataset/version=1/edition=20200501/hello-world.csv"
+    assert path == res
 
 
 def test_validate_edition_correct_edition(requests_mock):
