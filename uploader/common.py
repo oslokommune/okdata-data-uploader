@@ -16,13 +16,13 @@ API_GATEWAY_URL = os.environ["API_GATEWAY_URL"]
 
 
 def generate_s3_path(editionId, filename):
-    dataset, version, edition = editionId.split("/")
-    dataset_data = get_dataset(dataset)
+    dataset_id, version, edition = editionId.split("/")
+    dataset_data = get_dataset(dataset_id)
     confidentiality = get_confidentiality(dataset_data)
     parent_path = ""
     if "parent_id" in dataset_data:
         parent_path = f"{dataset_data['parent_id']}/"
-    return f"raw/{confidentiality}/{parent_path}{dataset}/version={version}/edition={edition}/{filename}"
+    return f"raw/{confidentiality}/{parent_path}{dataset_id}/version={version}/edition={edition}/{filename}"
 
 
 def generate_signed_post(bucket, key):
@@ -46,19 +46,19 @@ def generate_signed_post(bucket, key):
     return presigned_post
 
 
-def generate_uuid(s3path, dataset):
+def generate_uuid(s3path, dataset_id):
     new_uuid = uuid.uuid4()
-    return f"{dataset}-{new_uuid}"[0:80]
+    return f"{dataset_id}-{new_uuid}"[0:80]
 
 
-def generate_post_for_status_api(event, s3path, dataset):
-    log_add(dataset_id=dataset, s3path=s3path)
+def generate_post_for_status_api(event, s3path, dataset_id):
+    log_add(dataset_id=dataset_id, s3path=s3path)
 
     datetime_now = datetime.utcnow().isoformat()
     request_body = json.dumps(
         {
             "application": "dataset",
-            "application_id": dataset,
+            "application_id": dataset_id,
             "handler": "data-uploader",
             "user": "data-uploader",
             "date_started": datetime_now,
@@ -83,8 +83,8 @@ def error_response(status, message):
     }
 
 
-def get_dataset(dataset):
-    url = f"{BASE_URL}/datasets/{dataset}"
+def get_dataset(dataset_id):
+    url = f"{BASE_URL}/datasets/{dataset_id}"
     response = requests.get(url)
     data = response.json()
     return data
@@ -95,10 +95,10 @@ def get_confidentiality(data):
 
 
 def validate_edition(editionId):
-    dataset, version, edition = editionId.split("/")
+    dataset_id, version, edition = editionId.split("/")
     # If this URL exists and the data there matches what we get in from
     # erditionId, then we know that editionId has been created by the metadata API
-    url = f"{BASE_URL}/datasets/{dataset}/versions/{version}/editions/{edition}"
+    url = f"{BASE_URL}/datasets/{dataset_id}/versions/{version}/editions/{edition}"
     response = log_duration(lambda: requests.get(url), "requests_validate_edition_ms")
     data = response.json()
     if "Id" in data and editionId == data["Id"]:
@@ -108,8 +108,8 @@ def validate_edition(editionId):
 
 
 def validate_version(editionId):
-    dataset, version = editionId.split("/")
-    url = f"{BASE_URL}/datasets/{dataset}/versions/{version}"
+    dataset_id, version = editionId.split("/")
+    url = f"{BASE_URL}/datasets/{dataset_id}/versions/{version}"
     response = log_duration(lambda: requests.get(url), "requests_validate_version_ms")
     data = response.json()
     if "Id" in data and editionId == data["Id"]:
@@ -129,17 +129,17 @@ def edition_missing(editionId):
 
 
 def create_edition(event, editionId):
-    dataset, version = editionId.split("/")
+    dataset_id, version = editionId.split("/")
     edition = datetime.now().isoformat(timespec="seconds")
     data = {"edition": edition, "description": f"Data for {edition}"}
-    url = f"{BASE_URL}/{dataset}/versions/{version}/editions"
+    url = f"{BASE_URL}/{dataset_id}/versions/{version}/editions"
     access_token = event["headers"]["Authorization"].split(" ")[-1]
     req = SimpleAuth().poor_mans_delegation(access_token)
     result = req.post(url, data=json.dumps(data))
     if result.status_code == 409:
         edition = data["edition"]
         raise DataExistsError(
-            f"Edition: {edition} on datasetId {dataset} already exists"
+            f"Edition: {edition} on datasetId {dataset_id} already exists"
         )
 
     id = result.text.replace('"', "")
