@@ -66,6 +66,17 @@ def test_generate_s3_path_parent_id_in_upload_path(requests_mock):
     assert path == res
 
 
+def test_generate_s3_path_parent_id_null_upload_path(requests_mock):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/my-dataset"
+    response = json.dumps({"confidentiality": "green", "parent_id": None})
+    requests_mock.register_uri("GET", url, text=response, status_code=200)
+    editionId = "my-dataset/1/20200501"
+    filename = "hello-world.csv"
+    path = generate_s3_path(editionId, filename)
+    res = "raw/green/my-dataset/version=1/edition=20200501/hello-world.csv"
+    assert path == res
+
+
 def test_validate_edition_correct_edition(requests_mock):
     url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/h-eide-test2-5C5uX/versions/1/editions/20190528T133700"
     response = json.dumps({"Id": "h-eide-test2-5C5uX/1/20190528T133700"})

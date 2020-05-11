@@ -19,10 +19,11 @@ def generate_s3_path(editionId, filename):
     dataset_id, version, edition = editionId.split("/")
     dataset_data = get_dataset(dataset_id)
     confidentiality = get_confidentiality(dataset_data)
-    parent_path = ""
-    if "parent_id" in dataset_data:
-        parent_path = f"{dataset_data['parent_id']}/"
-    return f"raw/{confidentiality}/{parent_path}{dataset_id}/version={version}/edition={edition}/{filename}"
+    s3_dataset_path_prefix = f"raw/{confidentiality}"
+    if dataset_data.get("parent_id", None):
+        parent_path = f"{dataset_data['parent_id']}"
+        s3_dataset_path_prefix = f"{s3_dataset_path_prefix}/{parent_path}"
+    return f"{s3_dataset_path_prefix}/{dataset_id}/version={version}/edition={edition}/{filename}"
 
 
 def generate_signed_post(bucket, key):
