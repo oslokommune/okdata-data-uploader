@@ -20,7 +20,7 @@ def generate_s3_path(editionId, filename):
     dataset_data = get_dataset(dataset_id)
     confidentiality = get_confidentiality(dataset_data)
     parent_path = ""
-    if "parent_id" in dataset_data:
+    if dataset_data.get("parent_id", None):
         parent_path = f"{dataset_data['parent_id']}/"
     return f"raw/{confidentiality}/{parent_path}{dataset_id}/version={version}/edition={edition}/{filename}"
 
