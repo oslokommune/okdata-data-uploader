@@ -147,6 +147,17 @@ def test_handler(api_gateway_event, requests_mock):
     assert ret["statusCode"] == 200
 
 
+def test_handler_404_response(api_gateway_event, requests_mock):
+    url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/datasetid"
+    response = json.dumps({"message": "Not found"})
+    requests_mock.register_uri("GET", url, text=response, status_code=404)
+
+    event = api_gateway_event()
+    ret = handler(event, None)
+    assert ret["statusCode"] == 404
+    assert json.loads(ret["body"]) == {"message": "Dataset datasetid does not exist"}
+
+
 def test_s3_confidentiality_path_yellow(api_gateway_event, requests_mock):
     url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/alder-distribusjon-status"
     response = json.dumps({"confidentiality": "yellow"})
