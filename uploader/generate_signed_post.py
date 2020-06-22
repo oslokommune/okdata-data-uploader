@@ -7,6 +7,7 @@ from jsonschema import validate, ValidationError, SchemaError
 from json.decoder import JSONDecodeError
 
 from uploader.common import (
+    dataset_exist,
     error_response,
     edition_missing,
     validate_edition,
@@ -46,9 +47,12 @@ def handler(event, context):
     log_add(filename=body["filename"], edition_id=body["editionId"])
 
     maybe_edition = body["editionId"]
-    dataset, *_ = maybe_edition.split("/")
+    dataset_id, *_ = maybe_edition.split("/")
 
-    is_owner = SimpleAuth().is_owner(event, dataset)
+    if not dataset_exist(dataset_id):
+        return error_response(404, f"Dataset {dataset_id} does not exist")
+
+    is_owner = SimpleAuth().is_owner(event, dataset_id)
     log_add(enable_auth=ENABLE_AUTH, is_owner=is_owner)
 
     if ENABLE_AUTH and not is_owner:
@@ -76,7 +80,7 @@ def handler(event, context):
     s3path = generate_s3_path(**body)
     log_add(generated_s3_path=s3path)
 
-    status_response = generate_post_for_status_api(event, s3path, dataset)
+    status_response = generate_post_for_status_api(event, s3path, dataset_id)
 
     post_response = generate_signed_post(BUCKET, s3path)
     post_response["status_response"] = status_response

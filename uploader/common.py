@@ -145,3 +145,9 @@ def create_edition(event, editionId):
 
     id = result.text.replace('"', "")
     return id
+
+
+def dataset_exist(dataset_id):
+    url = f"{BASE_URL}/datasets/{dataset_id}"
+    response = requests.get(url)
+    return response.status_code == 200
