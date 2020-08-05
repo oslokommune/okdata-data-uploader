@@ -23,7 +23,7 @@ provider:
     KEYCLOAK_SERVER: ${ssm:/keycloak/client/server}
     KEYCLOAK_REALM: api-catalog
     CLIENT_ID: data-uploader
-    CLIENT_SECRET: ${ssm:/dataplatform/apis/data-uploader/auth/client_secret~true}
+    CLIENT_SECRET: ${ssm:/dataplatform/${self:service.name}/keycloak-client-secret~true}
     API_GATEWAY_URL: ${ssm:/dataplatform/shared/api-gateway-url}
   rolePermissionsBoundary: "arn:aws:iam::#{AWS::AccountId}:policy/oslokommune/oslokommune-boundary"
   iamManagedPolicies:
