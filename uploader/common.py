@@ -11,7 +11,7 @@ from botocore.client import Config
 from datetime import datetime
 
 
-BASE_URL = os.environ["METADATA_API"]
+BASE_URL = os.environ["METADATA_API_URL"]
 API_GATEWAY_URL = os.environ["API_GATEWAY_URL"]
 
 

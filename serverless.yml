@@ -17,10 +17,10 @@ provider:
   environment:
     GIT_REV: ${git:branch}:${git:sha1}
     BUCKET: ok-origo-dataplatform-${self:custom.resolvedStage}
-    METADATA_API: ${ssm:/dataplatform/metadata-api/url}
-    AUTHORIZER_API: ${ssm:/dataplatform/simple-dataset-authorizer/url}
+    METADATA_API_URL: ${ssm:/dataplatform/shared/api-gateway-url}/metadata
+    AUTHORIZER_API: ${ssm:/dataplatform/shared/api-gateway-url}/simple-dataset-authorizer
     ENABLE_AUTH: true
-    KEYCLOAK_SERVER: ${ssm:/keycloak/client/server}
+    KEYCLOAK_SERVER: ${ssm:/dataplatform/shared/keycloak-server-url}
     KEYCLOAK_REALM: api-catalog
     CLIENT_ID: data-uploader
     CLIENT_SECRET: ${ssm:/dataplatform/${self:service.name}/keycloak-client-secret~true}
@@ -91,7 +91,7 @@ custom:
     slim: false
     usePoetry: false
   esLogs:
-    endpoint: ${ssm:/dataplatform/elasticsearch/endpoint}
+    endpoint: ${ssm:/dataplatform/shared/logs-elasticsearch-endpoint}
     index: dataplatform-services
     filterPattern: '{ $.function_name = "*" }'
   documentation:
