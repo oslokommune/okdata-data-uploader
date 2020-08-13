@@ -96,7 +96,12 @@ def get_confidentiality(data):
 
 
 def validate_edition(editionId):
-    dataset_id, version, edition = editionId.split("/")
+    try:
+        dataset_id, version, edition = editionId.split("/")
+    except ValueError:
+        return False
+    if not all([dataset_id, version, edition]):
+        return False
     # If this URL exists and the data there matches what we get in from
     # erditionId, then we know that editionId has been created by the metadata API
     url = f"{BASE_URL}/datasets/{dataset_id}/versions/{version}/editions/{edition}"

@@ -95,6 +95,16 @@ def test_validate_edition_wrong_edition(requests_mock):
     assert result is False
 
 
+def test_validate_edition_invalid_id():
+    for invalid_edition_id in [
+        "h-eide-test2-5C5uX/1",
+        "h-eide-test2-5C5uX/1/",
+        "h-eide-test2-5C5uX/1/20190528T133700/123",
+    ]:
+        result = validate_edition(invalid_edition_id)
+        assert result is False
+
+
 def test_validate_version_correct_edition(requests_mock):
     url = "https://metadata.api-test.oslo.kommune.no/dev/datasets/h-eide-test2-5C5uX/versions/1"
     response = json.dumps({"Id": "h-eide-test2-5C5uX/1"})
