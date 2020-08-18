@@ -55,7 +55,7 @@ functions:
     handler: uploader.generate_signed_post.handler
     timeout: 30
     layers:
-      - ${ssm:/dataplatform/python-base-lambda-layer/arn}
+      - ${ssm:/dataplatform/shared/python-base-layer-arn}
     events:
       - http:
           path: /
