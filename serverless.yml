@@ -22,10 +22,7 @@ provider:
     AUTHORIZER_API: ${ssm:/dataplatform/shared/api-gateway-url}/simple-dataset-authorizer
     STATUS_API_URL: ${ssm:/dataplatform/shared/api-gateway-url}/status-api/status
     ENABLE_AUTH: true
-    KEYCLOAK_SERVER: ${ssm:/dataplatform/shared/keycloak-server-url}
-    KEYCLOAK_REALM: api-catalog
     CLIENT_ID: data-uploader
-    CLIENT_SECRET: ${ssm:/dataplatform/${self:service.name}/keycloak-client-secret~true}
   rolePermissionsBoundary: "arn:aws:iam::#{AWS::AccountId}:policy/oslokommune/oslokommune-boundary"
   iamManagedPolicies:
     - "arn:aws:iam::#{AWS::AccountId}:policy/data-uploader-policy"
@@ -55,8 +52,6 @@ functions:
   generate_signed_post:
     handler: uploader.generate_signed_post.handler
     timeout: 30
-    layers:
-      - ${ssm:/dataplatform/shared/python-base-layer-arn}
     events:
       - http:
           path: /
