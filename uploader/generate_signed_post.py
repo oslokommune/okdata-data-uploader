@@ -80,10 +80,12 @@ def handler(event, context):
     s3path = generate_s3_path(**body)
     log_add(generated_s3_path=s3path)
 
+    # TODO: Use status-client from common-python (DP-1258)
     status_response = generate_post_for_status_api(event, s3path, dataset_id)
 
     post_response = generate_signed_post(BUCKET, s3path)
-    post_response["status_response"] = status_response
+    post_response["status_response"] = status_response.get("trace_id")
+    post_response["trace_id"] = status_response.get("trace_id")
 
     log_add(full_post_response=post_response)
 

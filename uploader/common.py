@@ -71,7 +71,7 @@ def generate_post_for_status_api(event, s3path, dataset_id):
     access_token = event["headers"]["Authorization"].split(" ")[-1]
     req = SimpleAuth().poor_mans_delegation(access_token)
     response = req.post(STATUS_API_URL, request_body)
-    return json.loads(response.text)
+    return response.json()
 
 
 def error_response(status, message):

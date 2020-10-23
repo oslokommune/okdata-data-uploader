@@ -139,12 +139,17 @@ def test_handler(api_gateway_event, requests_mock):
 
     url = "https://api.data-dev.oslo.systems/status-api/status/*"
     matcher = re.compile(url)
-    response = json.dumps({"Id": "datasetid/1/20190101T125959"})
-    requests_mock.register_uri("POST", matcher, text=response, status_code=200)
+    trace_id = "my-dataset-00a1bcd2-e3f4-5a6b-c678-9c1defa234b5"
+    requests_mock.register_uri(
+        "POST", matcher, json={"trace_id": trace_id}, status_code=200
+    )
 
     event = api_gateway_event()
     ret = handler(event, None)
     assert ret["statusCode"] == 200
+    response_body = json.loads(ret["body"])
+    assert response_body["status_response"] == trace_id
+    assert response_body["trace_id"] == trace_id
 
 
 def test_handler_404_response(api_gateway_event, requests_mock):
@@ -171,8 +176,10 @@ def test_s3_confidentiality_path_yellow(api_gateway_event, requests_mock):
 
     url = "https://api.data-dev.oslo.systems/status-api/status/*"
     matcher = re.compile(url)
-    response = json.dumps({"Id": "datasetid/1/20190101T125959"})
-    requests_mock.register_uri("POST", matcher, text=response, status_code=200)
+    trace_id = "my-dataset-00a1bcd2-e3f4-5a6b-c678-9c1defa234b5"
+    requests_mock.register_uri(
+        "POST", matcher, json={"trace_id": trace_id}, status_code=200
+    )
 
     event = api_gateway_event()
     postBody = json.loads(event["body"])
@@ -180,9 +187,11 @@ def test_s3_confidentiality_path_yellow(api_gateway_event, requests_mock):
     event["body"] = json.dumps(postBody)
 
     ret = handler(event, None)
-    body = json.loads(ret["body"])
-    key = body["fields"]["key"]
+    response_body = json.loads(ret["body"])
+    key = response_body["fields"]["key"]
     assert "/yellow/" in key
+    assert response_body["status_response"] == trace_id
+    assert response_body["trace_id"] == trace_id
 
 
 def test_s3_confidentiality_path_green(api_gateway_event, requests_mock):
@@ -196,8 +205,10 @@ def test_s3_confidentiality_path_green(api_gateway_event, requests_mock):
 
     url = "https://api.data-dev.oslo.systems/status-api/status/*"
     matcher = re.compile(url)
-    response = json.dumps({"Id": "datasetid/1/20190101T125959"})
-    requests_mock.register_uri("POST", matcher, text=response, status_code=200)
+    trace_id = "my-dataset-00a1bcd2-e3f4-5a6b-c678-9c1defa234b5"
+    requests_mock.register_uri(
+        "POST", matcher, json={"trace_id": trace_id}, status_code=200
+    )
 
     event = api_gateway_event()
     postBody = json.loads(event["body"])
@@ -205,9 +216,11 @@ def test_s3_confidentiality_path_green(api_gateway_event, requests_mock):
     event["body"] = json.dumps(postBody)
 
     ret = handler(event, None)
-    body = json.loads(ret["body"])
-    key = body["fields"]["key"]
+    response_body = json.loads(ret["body"])
+    key = response_body["fields"]["key"]
     assert "/green/" in key
+    assert response_body["status_response"] == trace_id
+    assert response_body["trace_id"] == trace_id
 
 
 def test_s3_confidentiality_path_no_confidentiality_response(
@@ -223,8 +236,10 @@ def test_s3_confidentiality_path_no_confidentiality_response(
 
     url = "https://api.data-dev.oslo.systems/status-api/status/*"
     matcher = re.compile(url)
-    response = json.dumps({"Id": "datasetid/1/20190101T125959"})
-    requests_mock.register_uri("POST", matcher, text=response, status_code=200)
+    trace_id = "my-dataset-00a1bcd2-e3f4-5a6b-c678-9c1defa234b5"
+    requests_mock.register_uri(
+        "POST", matcher, json={"trace_id": trace_id}, status_code=200
+    )
 
     event = api_gateway_event()
     postBody = json.loads(event["body"])
@@ -232,6 +247,8 @@ def test_s3_confidentiality_path_no_confidentiality_response(
     event["body"] = json.dumps(postBody)
 
     ret = handler(event, None)
-    body = json.loads(ret["body"])
-    key = body["fields"]["key"]
+    response_body = json.loads(ret["body"])
+    key = response_body["fields"]["key"]
     assert "/green/" in key
+    assert response_body["status_response"] == trace_id
+    assert response_body["trace_id"] == trace_id
