@@ -5,6 +5,7 @@ from aws_xray_sdk.core import patch_all, xray_recorder
 from dataplatform.awslambda.logging import logging_wrapper, log_add
 from jsonschema import validate, ValidationError, SchemaError
 from json.decoder import JSONDecodeError
+from datetime import datetime, timezone
 
 from uploader.common import (
     dataset_exist,
@@ -15,7 +16,7 @@ from uploader.common import (
     create_edition,
     generate_s3_path,
     generate_signed_post,
-    generate_post_for_status_api,
+    create_status_trace,
 )
 from uploader.errors import DataExistsError, InvalidDatasetEditionError
 from uploader.schema import request_schema
@@ -27,7 +28,7 @@ BUCKET = os.environ["BUCKET"]
 ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
 
 
-@logging_wrapper("data-uploader")
+@logging_wrapper
 @xray_recorder.capture("generate_signed_post")
 def handler(event, context):
     body = None
@@ -47,7 +48,9 @@ def handler(event, context):
     log_add(filename=body["filename"], edition_id=body["editionId"])
 
     maybe_edition = body["editionId"]
-    dataset_id, *_ = maybe_edition.split("/")
+    dataset_id, dataset_version, *_ = maybe_edition.split("/")
+
+    log_add(dataset_id=dataset_id)
 
     if not dataset_exist(dataset_id):
         return error_response(404, f"Dataset {dataset_id} does not exist")
@@ -77,13 +80,30 @@ def handler(event, context):
         log_add(exc_info=e)
         return error_response(500, "Could not complete request, please try again later")
 
-    s3path = generate_s3_path(**body)
-    log_add(generated_s3_path=s3path)
+    s3_path = generate_s3_path(**body)
+    log_add(generated_s3_path=s3_path)
 
-    # TODO: Use status-client from common-python (DP-1258)
-    status_response = generate_post_for_status_api(event, s3path, dataset_id)
+    # TODO: Use status-client from common-python once it allows for creating
+    # new traces (not just updating), 2020-11-03, ref.
+    # https://github.oslo.kommune.no/origo-dataplatform/common-python/pull/48#discussion_r64632
+    principal_id = event["requestContext"]["authorizer"]["principalId"]
 
-    post_response = generate_signed_post(BUCKET, s3path)
+    status_data = {
+        "domain": "dataset",
+        "domain_id": f"{dataset_id}/{dataset_version}",
+        "component": "data-uploader",
+        "operation": "upload",
+        "user": principal_id,
+        "start_time": datetime.now(timezone.utc).isoformat(),
+        "s3_path": s3_path,
+    }
+
+    post_response = generate_signed_post(BUCKET, s3_path)
+
+    status_data["end_time"] = datetime.now(timezone.utc).isoformat()
+
+    status_response = create_status_trace(event, status_data)
+
     post_response["status_response"] = status_response.get("trace_id")
     post_response["trace_id"] = status_response.get("trace_id")
 

@@ -1,6 +1,7 @@
 import re
 import json
 import pytest
+from freezegun import freeze_time
 
 from uploader.generate_signed_post import handler, ENABLE_AUTH
 from uploader.common import error_response
@@ -85,6 +86,7 @@ def api_gateway_event():
                     "userAgent": "Custom User Agent String",
                     "user": None,
                 },
+                "authorizer": {"principalId": "abc123456"},
                 "httpMethod": "POST",
                 "apiId": "1234567890",
                 "protocol": "HTTP/1.1",
@@ -128,6 +130,7 @@ def test_handler_invalid_json(api_gateway_event):
     )
 
 
+@freeze_time("2020-11-02T19:54:14.123456+00:00")
 def test_handler(api_gateway_event, requests_mock):
     url = "https://api.data-dev.oslo.systems/metadata/datasets/datasetid"
     response = json.dumps({"confidentiality": "yellow"})
@@ -140,13 +143,26 @@ def test_handler(api_gateway_event, requests_mock):
     url = "https://api.data-dev.oslo.systems/status-api/status/*"
     matcher = re.compile(url)
     trace_id = "my-dataset-00a1bcd2-e3f4-5a6b-c678-9c1defa234b5"
-    requests_mock.register_uri(
+    m = requests_mock.register_uri(
         "POST", matcher, json={"trace_id": trace_id}, status_code=200
     )
 
     event = api_gateway_event()
     ret = handler(event, None)
+
     assert ret["statusCode"] == 200
+    assert m.called_once
+    assert m.last_request.json() == {
+        "domain": "dataset",
+        "domain_id": "datasetid/1",
+        "component": "data-uploader",
+        "operation": "upload",
+        "user": "abc123456",
+        "start_time": "2020-11-02T19:54:14.123456+00:00",
+        "s3_path": "raw/yellow/datasetid/version=1/edition=20190101T125959/datastuff.txt",
+        "end_time": "2020-11-02T19:54:14.123456+00:00",
+    }
+
     response_body = json.loads(ret["body"])
     assert response_body["status_response"] == trace_id
     assert response_body["trace_id"] == trace_id

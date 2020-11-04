@@ -5,7 +5,7 @@ import boto3
 import uuid
 
 from auth import SimpleAuth
-from dataplatform.awslambda.logging import log_duration, log_add
+from dataplatform.awslambda.logging import log_duration
 from uploader.errors import DataExistsError
 from botocore.client import Config
 from datetime import datetime
@@ -52,25 +52,10 @@ def generate_uuid(s3path, dataset_id):
     return f"{dataset_id}-{new_uuid}"[0:80]
 
 
-def generate_post_for_status_api(event, s3path, dataset_id):
-    log_add(dataset_id=dataset_id, s3path=s3path)
-
-    datetime_now = datetime.utcnow().isoformat()
-    request_body = json.dumps(
-        {
-            "application": "dataset",
-            "application_id": dataset_id,
-            "handler": "data-uploader",
-            "user": "data-uploader",
-            "date_started": datetime_now,
-            "date_end": "N/A",
-            "body": "N/A",
-            "s3path": s3path,
-        }
-    )
+def create_status_trace(event, status_data):
     access_token = event["headers"]["Authorization"].split(" ")[-1]
     req = SimpleAuth().poor_mans_delegation(access_token)
-    response = req.post(STATUS_API_URL, request_body)
+    response = req.post(STATUS_API_URL, json.dumps(status_data))
     return response.json()
 
 
