@@ -36,12 +36,12 @@ upgrade-deps: $(BUILD_VENV)/bin/pip-compile
 	$(BUILD_VENV)/bin/pip-compile -U
 
 .PHONY: deploy
-deploy: node_modules test login-dev
+deploy: init format test login-dev
 	@echo "\nDeploying to stage: $${STAGE:-dev}\n"
 	sls deploy --stage $${STAGE:-dev} --aws-profile $(.DEV_PROFILE)
 
 .PHONY: deploy-prod
-deploy-prod: node_modules is-git-clean test login-prod
+deploy-prod: init format is-git-clean test login-prod
 	sls deploy --stage prod --aws-profile $(.PROD_PROFILE)
 
 ifeq ($(MAKECMDGOALS),undeploy)
@@ -74,15 +74,6 @@ is-git-clean:
 		false; \
 	fi
 
-.PHONY: build
-build: $(BUILD_VENV)/bin/wheel $(BUILD_VENV)/bin/twine
-	$(BUILD_PY) setup.py sdist bdist_wheel
-
-.PHONY: jenkins-bump-patch
-jenkins-bump-patch: $(BUILD_VENV)/bin/bump2version is-git-clean
-	$(BUILD_VENV)/bin/bump2version patch
-	git push origin HEAD:${BRANCH_NAME}
-
 
 ###
 # Python build dependencies
@@ -90,10 +81,6 @@ jenkins-bump-patch: $(BUILD_VENV)/bin/bump2version is-git-clean
 
 $(BUILD_VENV)/bin/pip-compile: $(BUILD_VENV)
 	$(BUILD_PY) -m pip install -U pip-tools
-
-$(BUILD_VENV)/bin/tox: $(BUILD_VENV)
-	$(BUILD_PY) -m pip install -I virtualenv==16.7.9
-	$(BUILD_PY) -m pip install -U tox
 
 $(BUILD_VENV)/bin/%: $(BUILD_VENV)
 	$(BUILD_PY) -m pip install -U $*
