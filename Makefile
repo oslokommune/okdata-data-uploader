@@ -29,7 +29,7 @@ format: $(BUILD_VENV)/bin/black
 
 .PHONY: test
 test: $(BUILD_VENV)/bin/tox
-	$(BUILD_PY) -m tox -p auto
+	$(BUILD_PY) -m tox -p auto -o
 
 .PHONY: upgrade-deps
 upgrade-deps: $(BUILD_VENV)/bin/pip-compile
