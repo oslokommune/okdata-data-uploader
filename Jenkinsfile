@@ -14,7 +14,7 @@ String deployDev = """
                 serverless deploy --stage dev
                 """
 PythonConfiguration.instance.setContainerRepository("container-registry.oslo.kommune.no/python-37-serverless")
-PythonConfiguration.instance.setPythonVersion("latest")
+PythonConfiguration.instance.setPythonVersion("0.2.4")
 PythonConfiguration.instance.addSecretEnvVar("AWS_ACCESS_KEY_ID", "aws-jenkins-credentials", "AWS_ACCESS_KEY_ID")
 PythonConfiguration.instance.addSecretEnvVar("AWS_SECRET_ACCESS_KEY", "aws-jenkins-credentials", "AWS_SECRET_ACCESS_KEY")
 
