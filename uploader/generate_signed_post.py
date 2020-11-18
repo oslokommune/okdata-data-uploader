@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 
 from uploader.common import (
     dataset_exist,
+    is_dataset_owner,
     error_response,
     edition_missing,
     validate_edition,
@@ -20,7 +21,6 @@ from uploader.common import (
 )
 from uploader.errors import DataExistsError, InvalidDatasetEditionError
 from uploader.schema import request_schema
-from auth import SimpleAuth
 
 patch_all()
 
@@ -55,7 +55,9 @@ def handler(event, context):
     if not dataset_exist(dataset_id):
         return error_response(404, f"Dataset {dataset_id} does not exist")
 
-    is_owner = SimpleAuth().is_owner(event, dataset_id)
+    token = event["headers"]["Authorization"].split(" ")[-1]
+
+    is_owner = is_dataset_owner(token, dataset_id)
     log_add(enable_auth=ENABLE_AUTH, is_owner=is_owner)
 
     if ENABLE_AUTH and not is_owner:
@@ -64,7 +66,7 @@ def handler(event, context):
     try:
         edition_created = False
         if edition_missing(maybe_edition) and validate_version(maybe_edition):
-            body["editionId"] = create_edition(event, maybe_edition)
+            body["editionId"] = create_edition(token, maybe_edition)
             edition_created = True
 
         log_add(edition_id=body["editionId"], edition_created=edition_created)
@@ -102,7 +104,7 @@ def handler(event, context):
 
     status_data["end_time"] = datetime.now(timezone.utc).isoformat()
 
-    status_response = create_status_trace(event, status_data)
+    status_response = create_status_trace(token, status_data)
 
     post_response["status_response"] = status_response.get("trace_id")
     post_response["trace_id"] = status_response.get("trace_id")
