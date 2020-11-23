@@ -4,7 +4,6 @@ import json
 import boto3
 import uuid
 
-from auth import SimpleAuth
 from dataplatform.awslambda.logging import log_duration
 from uploader.errors import DataExistsError
 from botocore.client import Config
@@ -13,6 +12,7 @@ from datetime import datetime
 
 BASE_URL = os.environ["METADATA_API_URL"]
 STATUS_API_URL = os.environ["STATUS_API_URL"]
+AUTHORIZER_API = os.environ["AUTHORIZER_API"]
 
 
 def generate_s3_path(editionId, filename):
@@ -52,10 +52,14 @@ def generate_uuid(s3path, dataset_id):
     return f"{dataset_id}-{new_uuid}"[0:80]
 
 
-def create_status_trace(event, status_data):
-    access_token = event["headers"]["Authorization"].split(" ")[-1]
-    req = SimpleAuth().poor_mans_delegation(access_token)
-    response = req.post(STATUS_API_URL, json.dumps(status_data))
+def create_status_trace(token, status_data):
+    response = requests.post(
+        STATUS_API_URL,
+        json.dumps(status_data),
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
     return response.json()
 
 
@@ -118,14 +122,18 @@ def edition_missing(editionId):
     return False
 
 
-def create_edition(event, editionId):
+def create_edition(token, editionId):
     dataset_id, version = editionId.split("/")
     edition = datetime.now().isoformat(timespec="seconds")
     data = {"edition": edition, "description": f"Data for {edition}"}
     url = f"{BASE_URL}/{dataset_id}/versions/{version}/editions"
-    access_token = event["headers"]["Authorization"].split(" ")[-1]
-    req = SimpleAuth().poor_mans_delegation(access_token)
-    result = req.post(url, data=json.dumps(data))
+    result = requests.post(
+        url,
+        data=json.dumps(data),
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
     if result.status_code == 409:
         edition = data["edition"]
         raise DataExistsError(
@@ -140,3 +148,12 @@ def dataset_exist(dataset_id):
     url = f"{BASE_URL}/datasets/{dataset_id}"
     response = requests.get(url)
     return response.status_code == 200
+
+
+def is_dataset_owner(token, dataset_id):
+    result = requests.get(
+        f"{AUTHORIZER_API}/{dataset_id}", headers={"Authorization": f"Bearer {token}"}
+    )
+    result.raise_for_status()
+    data = result.json()
+    return "access" in data and data["access"]

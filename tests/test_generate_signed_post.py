@@ -13,14 +13,14 @@ def authorizer(requests_mock):
     requests_mock.register_uri(
         "GET",
         matcher,
-        request_headers={"Authorization": "Bjørnepollett"},
+        request_headers={"Authorization": "Bearer Bjørnepollett"},
         json={"access": True},
     )
 
     requests_mock.register_uri(
         "GET",
         matcher,
-        request_headers={"Authorization": "Snusk"},
+        request_headers={"Authorization": "Bearer Snusk"},
         json={"access": False},
     )
 
@@ -32,7 +32,7 @@ def api_gateway_event():
     """
 
     def _event(
-        authorization_header="Bjørnepollett",
+        authorization_header="Bearer Bjørnepollett",
         body=json.dumps(
             {"editionId": "datasetid/1/20190101T125959", "filename": "datastuff.txt"}
         ),
