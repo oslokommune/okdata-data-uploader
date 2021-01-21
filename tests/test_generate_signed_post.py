@@ -263,8 +263,4 @@ def test_s3_confidentiality_path_no_access_rights_response(
     event["body"] = json.dumps(postBody)
 
     ret = handler(event, None)
-    response_body = json.loads(ret["body"])
-    key = response_body["fields"]["key"]
-    assert "/green/" in key
-    assert response_body["status_response"] == trace_id
-    assert response_body["trace_id"] == trace_id
+    assert ret["statusCode"] == 400

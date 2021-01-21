@@ -86,7 +86,10 @@ def get_dataset(dataset_id):
 
 
 def get_confidentiality(data):
-    return CONFIDENTIALITY_MAP[data.get("accessRights", "public")]
+    try:
+        return CONFIDENTIALITY_MAP[data["accessRights"]]
+    except KeyError:
+        raise ValueError("Invalid `accessRights`")
 
 
 def validate_edition(editionId):

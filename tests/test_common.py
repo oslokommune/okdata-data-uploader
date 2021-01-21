@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from uploader.common import (
     get_dataset,
     get_confidentiality,
@@ -32,14 +34,14 @@ def test_validate_confidentiality_green(requests_mock):
     assert result == "green"
 
 
-def test_validate_confidentiality_empty(requests_mock):
-    url = "https://api.data-dev.oslo.systems/metadata/datasets/confidentiality-empty"
+def test_validate_missing_access_rights(requests_mock):
+    url = "https://api.data-dev.oslo.systems/metadata/datasets/missing-access-rights"
     response = json.dumps({})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
-    datasetId = "confidentiality-empty"
+    datasetId = "missing-access-rights"
     dataset_data = get_dataset(datasetId)
-    result = get_confidentiality(dataset_data)
-    assert result == "green"
+    with pytest.raises(ValueError):
+        get_confidentiality(dataset_data)
 
 
 def test_generate_s3_path_parent_id_not_in_upload_path(requests_mock):
