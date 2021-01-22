@@ -133,7 +133,7 @@ def test_handler_invalid_json(api_gateway_event):
 @freeze_time("2020-11-02T19:54:14.123456+00:00")
 def test_handler(api_gateway_event, requests_mock):
     url = "https://api.data-dev.oslo.systems/metadata/datasets/datasetid"
-    response = json.dumps({"confidentiality": "yellow"})
+    response = json.dumps({"accessRights": "restricted"})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
     url = "https://api.data-dev.oslo.systems/metadata/datasets/datasetid/versions/1/editions/20190101T125959"
@@ -183,7 +183,7 @@ def test_s3_confidentiality_path_yellow(api_gateway_event, requests_mock):
     url = (
         "https://api.data-dev.oslo.systems/metadata/datasets/alder-distribusjon-status"
     )
-    response = json.dumps({"confidentiality": "yellow"})
+    response = json.dumps({"accessRights": "restricted"})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
     url = "https://api.data-dev.oslo.systems/metadata/datasets/alder-distribusjon-status/versions/1/editions/20190101T125959"
@@ -212,7 +212,7 @@ def test_s3_confidentiality_path_yellow(api_gateway_event, requests_mock):
 
 def test_s3_confidentiality_path_green(api_gateway_event, requests_mock):
     url = "https://api.data-dev.oslo.systems/metadata/datasets/badetemperatur"
-    response = json.dumps({"confidentiality": "green"})
+    response = json.dumps({"accessRights": "public"})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
     url = "https://api.data-dev.oslo.systems/metadata/datasets/badetemperatur/versions/1/editions/20190101T125959"
@@ -239,7 +239,7 @@ def test_s3_confidentiality_path_green(api_gateway_event, requests_mock):
     assert response_body["trace_id"] == trace_id
 
 
-def test_s3_confidentiality_path_no_confidentiality_response(
+def test_s3_confidentiality_path_no_access_rights_response(
     api_gateway_event, requests_mock
 ):
     url = "https://api.data-dev.oslo.systems/metadata/datasets/badetemperatur"
@@ -263,8 +263,4 @@ def test_s3_confidentiality_path_no_confidentiality_response(
     event["body"] = json.dumps(postBody)
 
     ret = handler(event, None)
-    response_body = json.loads(ret["body"])
-    key = response_body["fields"]["key"]
-    assert "/green/" in key
-    assert response_body["status_response"] == trace_id
-    assert response_body["trace_id"] == trace_id
+    assert ret["statusCode"] == 400

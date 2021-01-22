@@ -14,6 +14,12 @@ BASE_URL = os.environ["METADATA_API_URL"]
 STATUS_API_URL = os.environ["STATUS_API_URL"]
 AUTHORIZER_API = os.environ["AUTHORIZER_API"]
 
+CONFIDENTIALITY_MAP = {
+    "public": "green",
+    "restricted": "yellow",
+    "non-public": "red",
+}
+
 
 def generate_s3_path(editionId, filename):
     dataset_id, version, edition = editionId.split("/")
@@ -80,7 +86,10 @@ def get_dataset(dataset_id):
 
 
 def get_confidentiality(data):
-    return data.get("confidentiality", "green")
+    try:
+        return CONFIDENTIALITY_MAP[data["accessRights"]]
+    except KeyError:
+        raise ValueError("Invalid `accessRights`")
 
 
 def validate_edition(editionId):

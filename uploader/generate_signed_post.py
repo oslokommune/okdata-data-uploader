@@ -82,7 +82,11 @@ def handler(event, context):
         log_add(exc_info=e)
         return error_response(500, "Could not complete request, please try again later")
 
-    s3_path = generate_s3_path(**body)
+    try:
+        s3_path = generate_s3_path(**body)
+    except ValueError as e:
+        return error_response(400, str(e))
+
     log_add(generated_s3_path=s3_path)
 
     # TODO: Use status-client from common-python once it allows for creating
