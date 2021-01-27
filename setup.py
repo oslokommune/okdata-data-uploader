@@ -19,6 +19,6 @@ setuptools.setup(
         "aws-xray-sdk",
         "jsonschema",
         "requests",
-        "dataplatform-common-python==0.2.20",
+        "okdata-aws",
     ],
 )
