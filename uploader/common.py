@@ -4,7 +4,7 @@ import json
 import boto3
 import uuid
 
-from dataplatform.awslambda.logging import log_duration
+from okdata.aws.logging import log_duration
 from uploader.errors import DataExistsError
 from botocore.client import Config
 from datetime import datetime
