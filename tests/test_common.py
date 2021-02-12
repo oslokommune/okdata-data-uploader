@@ -3,7 +3,7 @@ import json
 import pytest
 
 from uploader.common import (
-    get_dataset,
+    get_and_validate_dataset,
     get_confidentiality,
     validate_edition,
     validate_version,
@@ -11,68 +11,55 @@ from uploader.common import (
     create_edition,
     generate_s3_path,
 )
-from uploader.errors import DataExistsError
+from uploader.errors import (
+    DataExistsError,
+    InvalidSourceTypeError,
+    DatasetNotFoundError,
+)
 
 
-def test_validate_confidentiality_red(requests_mock):
-    url = "https://api.data-dev.oslo.systems/metadata/datasets/confidentiality-red"
-    response = json.dumps({"accessRights": "non-public"})
-    requests_mock.register_uri("GET", url, text=response, status_code=200)
-    datasetId = "confidentiality-red"
-    dataset_data = get_dataset(datasetId)
-    result = get_confidentiality(dataset_data)
-    assert result == "red"
+def test_validate_confidentiality_red():
+    confidentiality = get_confidentiality({"accessRights": "non-public"})
+    assert confidentiality == "red"
 
 
-def test_validate_confidentiality_green(requests_mock):
-    url = "https://api.data-dev.oslo.systems/metadata/datasets/confidentiality-green"
-    response = json.dumps({"accessRights": "public"})
-    requests_mock.register_uri("GET", url, text=response, status_code=200)
-    datasetId = "confidentiality-green"
-    dataset_data = get_dataset(datasetId)
-    result = get_confidentiality(dataset_data)
-    assert result == "green"
+def test_validate_confidentiality_green():
+    confidentiality = get_confidentiality({"accessRights": "public"})
+    assert confidentiality == "green"
 
 
-def test_validate_missing_access_rights(requests_mock):
-    url = "https://api.data-dev.oslo.systems/metadata/datasets/missing-access-rights"
-    response = json.dumps({})
-    requests_mock.register_uri("GET", url, text=response, status_code=200)
-    datasetId = "missing-access-rights"
-    dataset_data = get_dataset(datasetId)
+def test_validate_missing_access_rights():
     with pytest.raises(ValueError):
-        get_confidentiality(dataset_data)
+        get_confidentiality({})
 
 
-def test_generate_s3_path_parent_id_not_in_upload_path(requests_mock):
-    url = "https://api.data-dev.oslo.systems/metadata/datasets/my-dataset"
-    response = json.dumps({"accessRights": "public"})
-    requests_mock.register_uri("GET", url, text=response, status_code=200)
+def test_generate_s3_path_dataset_without_parent():
+    dataset = {"Id": "my-dataset", "accessRights": "public"}
     editionId = "my-dataset/1/20200501"
     filename = "hello-world.csv"
-    path = generate_s3_path(editionId, filename)
+    path = generate_s3_path(dataset, editionId, filename)
     res = "raw/green/my-dataset/version=1/edition=20200501/hello-world.csv"
     assert path == res
 
 
-def test_generate_s3_path_parent_id_in_upload_path(requests_mock):
-    url = "https://api.data-dev.oslo.systems/metadata/datasets/my-dataset"
-    response = json.dumps({"accessRights": "public", "parent_id": "my-parent-dataset"})
-    requests_mock.register_uri("GET", url, text=response, status_code=200)
+def test_generate_s3_path_dataset_with_parent():
+    dataset = {
+        "Id": "my-dataset",
+        "accessRights": "public",
+        "parent_id": "my-parent-dataset",
+    }
     editionId = "my-dataset/1/20200501"
     filename = "hello-world.csv"
-    path = generate_s3_path(editionId, filename)
+    path = generate_s3_path(dataset, editionId, filename)
     res = "raw/green/my-parent-dataset/my-dataset/version=1/edition=20200501/hello-world.csv"
     assert path == res
 
 
-def test_generate_s3_path_parent_id_null_upload_path(requests_mock):
-    url = "https://api.data-dev.oslo.systems/metadata/datasets/my-dataset"
-    response = json.dumps({"accessRights": "public", "parent_id": None})
-    requests_mock.register_uri("GET", url, text=response, status_code=200)
+def test_generate_s3_path_parent_id_is_null(requests_mock):
+    dataset = {"Id": "my-dataset", "accessRights": "public", "parent_id": None}
     editionId = "my-dataset/1/20200501"
     filename = "hello-world.csv"
-    path = generate_s3_path(editionId, filename)
+    path = generate_s3_path(dataset, editionId, filename)
     res = "raw/green/my-dataset/version=1/edition=20200501/hello-world.csv"
     assert path == res
 
@@ -158,3 +145,45 @@ def test_edition_missing_edition_has_no_value():
 def test_edition_missing_edition_exists():
     editionId = "my-dataset/version/my-edition"
     assert edition_missing(editionId) is False
+
+
+def test_get_and_validate_dataset(requests_mock):
+    dataset_id = "my-dataset"
+    url = f"https://api.data-dev.oslo.systems/metadata/datasets/{dataset_id}"
+    response = json.dumps(
+        {"Id": dataset_id, "source": {"type": "file"}, "accessRights": "public"}
+    )
+    requests_mock.register_uri("GET", url, text=response, status_code=200)
+
+    assert get_and_validate_dataset(dataset_id) == {
+        "Id": dataset_id,
+        "source": {"type": "file"},
+        "accessRights": "public",
+    }
+
+
+def test_get_and_validate_dataset_invalid_source_type(requests_mock):
+    dataset_id = "my-dataset"
+    invalid_source_type = "event"
+    url = f"https://api.data-dev.oslo.systems/metadata/datasets/{dataset_id}"
+    response = json.dumps(
+        {
+            "Id": dataset_id,
+            "source": {"type": invalid_source_type},
+            "accessRights": "public",
+        }
+    )
+    requests_mock.register_uri("GET", url, text=response, status_code=200)
+
+    with pytest.raises(InvalidSourceTypeError):
+        get_and_validate_dataset(dataset_id)
+
+
+def test_get_and_validate_dataset_not_found(requests_mock):
+    dataset_id = "my-dataset"
+    url = f"https://api.data-dev.oslo.systems/metadata/datasets/{dataset_id}"
+    response = json.dumps({"message": "Not found"})
+    requests_mock.register_uri("GET", url, text=response, status_code=404)
+
+    with pytest.raises(DatasetNotFoundError):
+        get_and_validate_dataset(dataset_id)

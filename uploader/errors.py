@@ -4,3 +4,11 @@ class DataExistsError(Exception):
 
 class InvalidDatasetEditionError(Exception):
     pass
+
+
+class InvalidSourceTypeError(Exception):
+    pass
+
+
+class DatasetNotFoundError(Exception):
+    pass

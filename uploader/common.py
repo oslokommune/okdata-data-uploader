@@ -5,7 +5,11 @@ import boto3
 import uuid
 
 from okdata.aws.logging import log_duration
-from uploader.errors import DataExistsError
+from uploader.errors import (
+    DataExistsError,
+    DatasetNotFoundError,
+    InvalidSourceTypeError,
+)
 from botocore.client import Config
 from datetime import datetime
 
@@ -21,13 +25,12 @@ CONFIDENTIALITY_MAP = {
 }
 
 
-def generate_s3_path(editionId, filename):
-    dataset_id, version, edition = editionId.split("/")
-    dataset_data = get_dataset(dataset_id)
-    confidentiality = get_confidentiality(dataset_data)
+def generate_s3_path(dataset: dict, edition_id: str, filename: str):
+    dataset_id, version, edition = edition_id.split("/")
+    confidentiality = get_confidentiality(dataset)
     s3_dataset_path_prefix = f"raw/{confidentiality}"
-    if dataset_data.get("parent_id", None):
-        parent_path = f"{dataset_data['parent_id']}"
+    if dataset.get("parent_id", None):
+        parent_path = f"{dataset['parent_id']}"
         s3_dataset_path_prefix = f"{s3_dataset_path_prefix}/{parent_path}"
     return f"{s3_dataset_path_prefix}/{dataset_id}/version={version}/edition={edition}/{filename}"
 
@@ -78,11 +81,23 @@ def error_response(status, message):
     }
 
 
-def get_dataset(dataset_id):
+def get_and_validate_dataset(dataset_id):
     url = f"{BASE_URL}/datasets/{dataset_id}"
     response = requests.get(url)
-    data = response.json()
-    return data
+
+    if response.status_code == 404:
+        raise DatasetNotFoundError
+
+    response.raise_for_status()
+
+    dataset = response.json()
+    source_type = dataset["source"]["type"]
+
+    if source_type != "file":
+        error_msg = f"Invalid source.type '{source_type}' for dataset: {dataset_id}. Must be source.type='file'"
+        raise InvalidSourceTypeError(error_msg)
+
+    return dataset
 
 
 def get_confidentiality(data):
@@ -151,12 +166,6 @@ def create_edition(token, editionId):
 
     id = result.text.replace('"', "")
     return id
-
-
-def dataset_exist(dataset_id):
-    url = f"{BASE_URL}/datasets/{dataset_id}"
-    response = requests.get(url)
-    return response.status_code == 200
 
 
 def is_dataset_owner(token, dataset_id):

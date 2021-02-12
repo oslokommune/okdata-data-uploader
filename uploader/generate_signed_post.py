@@ -8,7 +8,7 @@ from json.decoder import JSONDecodeError
 from datetime import datetime, timezone
 
 from uploader.common import (
-    dataset_exist,
+    get_and_validate_dataset,
     is_dataset_owner,
     error_response,
     edition_missing,
@@ -19,7 +19,12 @@ from uploader.common import (
     generate_signed_post,
     create_status_trace,
 )
-from uploader.errors import DataExistsError, InvalidDatasetEditionError
+from uploader.errors import (
+    DataExistsError,
+    InvalidDatasetEditionError,
+    InvalidSourceTypeError,
+    DatasetNotFoundError,
+)
 from uploader.schema import request_schema
 
 patch_all()
@@ -31,29 +36,33 @@ ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
 @logging_wrapper
 @xray_recorder.capture("generate_signed_post")
 def handler(event, context):
-    body = None
     try:
         body = json.loads(event["body"])
         validate(body, request_schema)
+
+        log_add(filename=body["filename"], edition_id=body["editionId"])
+        maybe_edition = body["editionId"]
+
+        dataset_id, dataset_version, *_ = maybe_edition.split("/")
+        log_add(dataset_id=dataset_id)
+
+        dataset = get_and_validate_dataset(dataset_id)
     except JSONDecodeError as e:
         log_add(exc_info=e)
         return error_response(400, "Body is not a valid JSON document")
     except ValidationError as e:
         log_add(exc_info=e)
         return error_response(400, "JSON document does not conform to the given schema")
-    except SchemaError as e:
+    except InvalidSourceTypeError as e:
+        return error_response(
+            400,
+            str(e),
+        )
+    except DatasetNotFoundError:
+        return error_response(404, f"Dataset {dataset_id} does not exist")
+    except (SchemaError, Exception) as e:
         log_add(exc_info=e)
         return error_response(500, "Internal server error")
-
-    log_add(filename=body["filename"], edition_id=body["editionId"])
-
-    maybe_edition = body["editionId"]
-    dataset_id, dataset_version, *_ = maybe_edition.split("/")
-
-    log_add(dataset_id=dataset_id)
-
-    if not dataset_exist(dataset_id):
-        return error_response(404, f"Dataset {dataset_id} does not exist")
 
     token = event["headers"]["Authorization"].split(" ")[-1]
 
@@ -83,7 +92,9 @@ def handler(event, context):
         return error_response(500, "Could not complete request, please try again later")
 
     try:
-        s3_path = generate_s3_path(**body)
+        s3_path = generate_s3_path(
+            dataset=dataset, edition_id=body["editionId"], filename=body["filename"]
+        )
     except ValueError as e:
         return error_response(400, str(e))
 

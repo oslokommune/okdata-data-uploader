@@ -130,10 +130,25 @@ def test_handler_invalid_json(api_gateway_event):
     )
 
 
+def test_handler_invalid_source_type(api_gateway_event, requests_mock):
+    url = "https://api.data-dev.oslo.systems/metadata/datasets/datasetid"
+    response = json.dumps(
+        {"accessRights": "restricted", "source": {"type": "database"}}
+    )
+    requests_mock.register_uri("GET", url, text=response, status_code=200)
+
+    event = api_gateway_event()
+    response = handler(event, None)
+    assert response["statusCode"] == 400
+    assert json.loads(response["body"]) == {
+        "message": "Invalid source.type 'database' for dataset: datasetid. Must be source.type='file'"
+    }
+
+
 @freeze_time("2020-11-02T19:54:14.123456+00:00")
 def test_handler(api_gateway_event, requests_mock):
     url = "https://api.data-dev.oslo.systems/metadata/datasets/datasetid"
-    response = json.dumps({"accessRights": "restricted"})
+    response = json.dumps({"accessRights": "restricted", "source": {"type": "file"}})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
     url = "https://api.data-dev.oslo.systems/metadata/datasets/datasetid/versions/1/editions/20190101T125959"
@@ -183,7 +198,7 @@ def test_s3_confidentiality_path_yellow(api_gateway_event, requests_mock):
     url = (
         "https://api.data-dev.oslo.systems/metadata/datasets/alder-distribusjon-status"
     )
-    response = json.dumps({"accessRights": "restricted"})
+    response = json.dumps({"accessRights": "restricted", "source": {"type": "file"}})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
     url = "https://api.data-dev.oslo.systems/metadata/datasets/alder-distribusjon-status/versions/1/editions/20190101T125959"
@@ -212,7 +227,7 @@ def test_s3_confidentiality_path_yellow(api_gateway_event, requests_mock):
 
 def test_s3_confidentiality_path_green(api_gateway_event, requests_mock):
     url = "https://api.data-dev.oslo.systems/metadata/datasets/badetemperatur"
-    response = json.dumps({"accessRights": "public"})
+    response = json.dumps({"accessRights": "public", "source": {"type": "file"}})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
     url = "https://api.data-dev.oslo.systems/metadata/datasets/badetemperatur/versions/1/editions/20190101T125959"
@@ -243,7 +258,7 @@ def test_s3_confidentiality_path_no_access_rights_response(
     api_gateway_event, requests_mock
 ):
     url = "https://api.data-dev.oslo.systems/metadata/datasets/badetemperatur"
-    response = json.dumps({"hello": "world"})
+    response = json.dumps({"hello": "world", "source": {"type": "file"}})
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
     url = "https://api.data-dev.oslo.systems/metadata/datasets/badetemperatur/versions/1/editions/20190101T125959"

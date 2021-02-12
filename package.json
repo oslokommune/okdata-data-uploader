@@ -7,7 +7,7 @@
   "devDependencies": {
     "serverless": "^2.10.0",
     "serverless-aws-documentation": "^1.1.0",
-    "serverless-es-logs": "^3.2.0",
+    "serverless-es-logs": "^3.4.1",
     "serverless-plugin-git-variables": "^3.3.3",
     "serverless-pseudo-parameters": "^2.4.0",
     "serverless-python-requirements": "^5.0.1"
