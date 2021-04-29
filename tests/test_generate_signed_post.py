@@ -1,28 +1,24 @@
 import re
 import json
+
 import pytest
 from freezegun import freeze_time
 
+from okdata.resource_auth import ResourceAuthorizer
 from uploader.generate_signed_post import handler, ENABLE_AUTH
 from uploader.common import error_response
 
 
 @pytest.fixture(autouse=True)
-def authorizer(requests_mock):
-    matcher = re.compile("https://example.com/.*")
-    requests_mock.register_uri(
-        "GET",
-        matcher,
-        request_headers={"Authorization": "Bearer Bjørnepollett"},
-        json={"access": True},
-    )
+def authorizer(monkeypatch):
+    def check_token(self, token, scope, resource_name):
+        return (
+            token == "Bjørnepollett"
+            and scope == "okdata:dataset:write"
+            and resource_name.startswith("okdata:dataset:")
+        )
 
-    requests_mock.register_uri(
-        "GET",
-        matcher,
-        request_headers={"Authorization": "Bearer Snusk"},
-        json={"access": False},
-    )
+    monkeypatch.setattr(ResourceAuthorizer, "has_access", check_token)
 
 
 @pytest.fixture
@@ -106,9 +102,14 @@ def test_error_response():
 
 
 @pytest.mark.skipif(not ENABLE_AUTH, reason="Auth is disabled")
-def test_handler_403_when_not_authenticated(api_gateway_event):
+def test_handler_403_when_not_authenticated(api_gateway_event, requests_mock):
+    url = "https://api.data-dev.oslo.systems/metadata/datasets/datasetid"
+    response = json.dumps({"accessRights": "restricted", "source": {"type": "file"}})
+    requests_mock.register_uri("GET", url, text=response, status_code=200)
+
     event = api_gateway_event(authorization_header="Snusk")
     ret = handler(event, None)
+
     assert ret["statusCode"] == 403
     assert json.loads(ret["body"])["message"] == "Forbidden"
 

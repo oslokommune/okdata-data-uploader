@@ -16,7 +16,6 @@ from datetime import datetime
 
 BASE_URL = os.environ["METADATA_API_URL"]
 STATUS_API_URL = os.environ["STATUS_API_URL"]
-AUTHORIZER_API = os.environ["AUTHORIZER_API"]
 
 CONFIDENTIALITY_MAP = {
     "public": "green",
@@ -166,12 +165,3 @@ def create_edition(token, editionId):
 
     id = result.text.replace('"', "")
     return id
-
-
-def is_dataset_owner(token, dataset_id):
-    result = requests.get(
-        f"{AUTHORIZER_API}/{dataset_id}", headers={"Authorization": f"Bearer {token}"}
-    )
-    result.raise_for_status()
-    data = result.json()
-    return "access" in data and data["access"]

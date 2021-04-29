@@ -20,5 +20,6 @@ setuptools.setup(
         "jsonschema",
         "requests",
         "okdata-aws",
+        "okdata-resource-auth",
     ],
 )

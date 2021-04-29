@@ -1,15 +1,16 @@
 import os
 import json
-
-from aws_xray_sdk.core import patch_all, xray_recorder
-from okdata.aws.logging import logging_wrapper, log_add
-from jsonschema import validate, ValidationError, SchemaError
 from json.decoder import JSONDecodeError
 from datetime import datetime, timezone
 
+from aws_xray_sdk.core import patch_all, xray_recorder
+from jsonschema import validate, ValidationError, SchemaError
+
+from okdata.aws.logging import logging_wrapper, log_add
+from okdata.resource_auth import ResourceAuthorizer
+
 from uploader.common import (
     get_and_validate_dataset,
-    is_dataset_owner,
     error_response,
     edition_missing,
     validate_edition,
@@ -31,6 +32,8 @@ patch_all()
 
 BUCKET = os.environ["BUCKET"]
 ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
+
+resource_authorizer = ResourceAuthorizer()
 
 
 @logging_wrapper
@@ -66,10 +69,12 @@ def handler(event, context):
 
     token = event["headers"]["Authorization"].split(" ")[-1]
 
-    is_owner = is_dataset_owner(token, dataset_id)
-    log_add(enable_auth=ENABLE_AUTH, is_owner=is_owner)
+    has_access = resource_authorizer.has_access(
+        token, "okdata:dataset:write", f"okdata:dataset:{dataset_id}"
+    )
+    log_add(enable_auth=ENABLE_AUTH, has_access=has_access)
 
-    if ENABLE_AUTH and not is_owner:
+    if ENABLE_AUTH and not has_access:
         return error_response(403, "Forbidden")
 
     try:

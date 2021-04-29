@@ -19,9 +19,11 @@ provider:
     BUCKET: ok-origo-dataplatform-${self:custom.resolvedStage}
     SERVICE_NAME: ${self:service}
     METADATA_API_URL: ${ssm:/dataplatform/shared/api-gateway-url}/metadata
-    AUTHORIZER_API: ${ssm:/dataplatform/shared/api-gateway-url}/simple-dataset-authorizer
     STATUS_API_URL: ${ssm:/dataplatform/shared/api-gateway-url}/status-api/status
     ENABLE_AUTH: true
+    KEYCLOAK_SERVER: ${ssm:/dataplatform/shared/keycloak-server-url}
+    KEYCLOAK_REALM: api-catalog
+    RESOURCE_SERVER_CLIENT_ID: "okdata-resource-server"
     CLIENT_ID: data-uploader
   rolePermissionsBoundary: "arn:aws:iam::#{AWS::AccountId}:policy/oslokommune/oslokommune-boundary"
   iamManagedPolicies:
