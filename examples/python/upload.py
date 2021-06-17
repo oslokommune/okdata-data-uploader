@@ -11,19 +11,17 @@ config.read("config.ini")
 #####
 # Datasets to be added to metadata API
 datasetData = {
-    "title": "H.Eide test2",
-    "description": "H.Eide test data",
-    "keywords": ["eide", "test"],
-    "frequency": "hourly",
-    "accessRights": ":non-public",
-    "privacyLevel": "green",
+    "title": "Test",
+    "description": "Test data",
+    "keywords": ["test"],
+    "accessRights": "non-public",
     "objective": "Formålsbeskrivelse",
     "contactPoint": {
-        "name": "***REMOVED***",
-        "email": "***REMOVED***",
-        "phone": "***REMOVED***",
+        "name": "Tim",
+        "email": "tim@example.org",
+        "phone": "12345678",
     },
-    "publisher": "EIDE",
+    "publisher": "Tim",
 }
 datasetVersionData = {"version": "6", "schema": {}, "transformation": {}}
 datasetVersionEditionData = {
