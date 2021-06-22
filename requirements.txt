@@ -7,9 +7,9 @@
 attrs==20.3.0
     # via jsonschema
 aws-xray-sdk==2.7.0
-    # via data-uploader (setup.py)
+    # via okdata-data-uploader (setup.py)
 boto3==1.17.59
-    # via data-uploader (setup.py)
+    # via okdata-data-uploader (setup.py)
 botocore==1.20.59
     # via
     #   aws-xray-sdk
@@ -31,12 +31,12 @@ jmespath==0.10.0
     #   botocore
 jsonschema==3.2.0
     # via
-    #   data-uploader (setup.py)
+    #   okdata-data-uploader (setup.py)
     #   okdata-sdk
 okdata-aws==0.3.2
-    # via data-uploader (setup.py)
+    # via okdata-data-uploader (setup.py)
 okdata-resource-auth==0.1.0
-    # via data-uploader (setup.py)
+    # via okdata-data-uploader (setup.py)
 okdata-sdk==0.7.0
     # via okdata-aws
 prettytable==2.1.0
@@ -59,7 +59,7 @@ python-keycloak==0.24.0
     # via okdata-sdk
 requests==2.25.1
     # via
-    #   data-uploader (setup.py)
+    #   okdata-data-uploader (setup.py)
     #   okdata-resource-auth
     #   okdata-sdk
     #   python-keycloak
