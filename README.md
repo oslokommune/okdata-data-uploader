@@ -12,7 +12,7 @@ make init
 
 ### Setup for development
 
-Grab yourselv a virtualenv:
+Grab yourself a virtualenv:
 ```
 python3.7 -m venv .venv
 ```
@@ -46,7 +46,7 @@ With `npm` and `serverless` installed:
 
 `make deploy`
 
-## Code fromatting
+## Code formatting
 
 ```
 make format
