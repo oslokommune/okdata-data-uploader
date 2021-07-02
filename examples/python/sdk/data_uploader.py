@@ -92,8 +92,9 @@ class DataUploader:
         for var in s3SignedData["fields"]:
             s3Data[var] = s3SignedData["fields"][var]
 
-        files = {"file": open(fileName, "rb")}
-        result = requests.post(url, data=s3Data, files=files)
+        with open(fileName, "rb") as f:
+            result = requests.post(url, data=s3Data, files={"file": f})
+
         return result.status_code == 204
 
     def createS3SignedData(self, fileName):
