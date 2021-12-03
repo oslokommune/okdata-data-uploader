@@ -1,6 +1,6 @@
 # Data uploader
 
-Returns a presigned URL and form fields that can be used to POST a file to S3.
+REST API for creating presigned URLs and form fields that can be used to POST a file to S3.
 
 ## Setup
 
