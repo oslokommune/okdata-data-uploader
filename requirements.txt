@@ -47,7 +47,7 @@ pyasn1==0.4.8
     #   rsa
 pydantic==1.8.2
     # via okdata-aws
-pyjwt==2.1.0
+pyjwt==2.4.0
     # via okdata-sdk
 pyrsistent==0.17.3
     # via jsonschema
