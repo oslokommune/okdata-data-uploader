@@ -1,10 +1,10 @@
-frameworkVersion: ">=2.10.0 <3.0.0"
+frameworkVersion: ">=3.14.0 <4.0.0"
 
 service: data-uploader
 
 provider:
   name: aws
-  runtime: python3.7
+  runtime: python3.9
   region: ${opt:region, 'eu-west-1'}
   endpointType: REGIONAL
   stage: ${opt:stage, 'dev'}
@@ -15,6 +15,12 @@ provider:
     name: ok-origo-dataplatform-config-${self:custom.resolvedStage}
     serverSideEncryption: AES256
   deploymentPrefix: deploy
+  logRetentionInDays: 90
+  iam:
+    role:
+      permissionsBoundary: "arn:aws:iam::${aws:accountId}:policy/oslokommune/oslokommune-boundary"
+      managedPolicies:
+        - 'arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess'
   environment:
     GIT_REV: ${git:branch}:${git:sha1}
     BUCKET: ok-origo-dataplatform-${self:custom.resolvedStage}
@@ -26,18 +32,15 @@ provider:
     KEYCLOAK_REALM: api-catalog
     RESOURCE_SERVER_CLIENT_ID: "okdata-resource-server"
     CLIENT_ID: data-uploader
-  rolePermissionsBoundary: "arn:aws:iam::#{AWS::AccountId}:policy/oslokommune/oslokommune-boundary"
-  iamManagedPolicies:
-    - "arn:aws:iam::#{AWS::AccountId}:policy/data-uploader-policy"
   tags:
     GIT_REV: ${git:branch}:${git:sha1}
 
 plugins:
-  - serverless-aws-documentation
-  - serverless-python-requirements
-  - serverless-plugin-git-variables
-  - serverless-pseudo-parameters
+  - "@kakkuk/serverless-aws-apigateway-documentation"
   - serverless-es-logs
+  - serverless-plugin-git-variables
+  - serverless-prune-plugin
+  - serverless-python-requirements
 
 resources:
   Description: |
@@ -45,9 +48,8 @@ resources:
     ${git:message}
 
 package:
-  exclude:
-    - "**/*"
-  include:
+  patterns:
+    - '!**/*'
     - uploader/*.py
     - doc/models/*.json
 
@@ -61,7 +63,7 @@ functions:
           method: post
           cors: true
           authorizer:
-            arn: arn:aws:lambda:${self:provider.region}:#{AWS::AccountId}:function:keycloak-authorizer-${self:custom.resolvedStage}-authenticate
+            arn: arn:aws:lambda:${self:provider.region}:${aws:accountId}:function:keycloak-authorizer-${self:custom.resolvedStage}-authenticate
             resultTtlInSeconds: 300
             identitySource: method.request.header.Authorization
             identityValidationExpression: "^(b|B)earer [-0-9a-zA-Z\\._]*$"
@@ -89,6 +91,9 @@ custom:
     dockerizePip: non-linux
     slim: false
     usePoetry: false
+  prune:
+    automatic: true
+    number: 3
   esLogs:
     endpoint: ${ssm:/dataplatform/shared/logs-elasticsearch-endpoint}
     index: dataplatform-services
