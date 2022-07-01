@@ -39,6 +39,7 @@ plugins:
   - "@kakkuk/serverless-aws-apigateway-documentation"
   - serverless-es-logs
   - serverless-plugin-git-variables
+  - serverless-prune-plugin
   - serverless-python-requirements
 
 resources:
@@ -90,6 +91,9 @@ custom:
     dockerizePip: non-linux
     slim: false
     usePoetry: false
+  prune:
+    automatic: true
+    number: 3
   esLogs:
     endpoint: ${ssm:/dataplatform/shared/logs-elasticsearch-endpoint}
     index: dataplatform-services
