@@ -5,12 +5,12 @@
   "private": true,
   "dependencies": {},
   "devDependencies": {
-    "@kakkuk/serverless-aws-apigateway-documentation": "1.1.12",
     "aws-sso-creds-helper": "^1.8.15",
-    "serverless": "^3.14.0",
+    "serverless": "^2.48.0",
+    "serverless-aws-documentation": "^1.1.0",
     "serverless-es-logs": "^3.4.2",
-    "serverless-plugin-git-variables": "^5.2.0",
-    "serverless-prune-plugin": "^2.0.1",
-    "serverless-python-requirements": "^5.4.0"
+    "serverless-plugin-git-variables": "^5.1.0",
+    "serverless-pseudo-parameters": "^2.5.0",
+    "serverless-python-requirements": "^5.1.1"
   }
 }
