@@ -14,7 +14,7 @@ make init
 
 Grab yourself a virtualenv:
 ```
-python3.9 -m venv .venv
+python3.7 -m venv .venv
 ```
 
 To activate the virtualenv run:
