@@ -21,7 +21,7 @@ chardet==4.0.0
     # via requests
 ecdsa==0.14.1
     # via python-jose
-future==0.18.2
+future==0.18.3
     # via aws-xray-sdk
 idna==2.10
     # via requests
