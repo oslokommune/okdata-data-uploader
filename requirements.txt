@@ -57,7 +57,7 @@ python-jose==3.2.0
     # via python-keycloak
 python-keycloak==0.24.0
     # via okdata-sdk
-requests==2.25.1
+requests==2.31.0
     # via
     #   okdata-data-uploader (setup.py)
     #   okdata-resource-auth
