@@ -39,7 +39,6 @@ plugins:
   - "@kakkuk/serverless-aws-apigateway-documentation"
   - serverless-python-requirements
   - serverless-plugin-git-variables
-  - serverless-es-logs
 
 resources:
   Description: |
@@ -93,10 +92,6 @@ custom:
   prune:
     automatic: true
     number: 3
-  esLogs:
-    endpoint: ${ssm:/dataplatform/shared/logs-elasticsearch-endpoint}
-    index: dataplatform-services
-    filterPattern: '{ $.function_name = "*" }'
   documentation:
     info:
       title: Data Uploader
