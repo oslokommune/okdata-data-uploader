@@ -15,7 +15,7 @@ botocore==1.20.59
     #   aws-xray-sdk
     #   boto3
     #   s3transfer
-certifi==2022.12.7
+certifi==2023.7.22
     # via requests
 chardet==4.0.0
     # via requests
