@@ -36,6 +36,7 @@ provider:
     GIT_REV: ${git:branch}:${git:sha1}
 
 plugins:
+  - serverless-better-credentials # must be first
   - "@kakkuk/serverless-aws-apigateway-documentation"
   - serverless-python-requirements
   - serverless-plugin-git-variables
