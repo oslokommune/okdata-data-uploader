@@ -49,12 +49,10 @@ undeploy-prod: login-prod init
 .PHONY: login-dev
 login-dev: init
 	aws sts get-caller-identity --profile $(.DEV_PROFILE) || aws sso login --profile=$(.DEV_PROFILE)
-	./node_modules/.bin/ssocreds -p $(.DEV_PROFILE) # https://github.com/serverless/serverless/issues/7567
 
 .PHONY: login-prod
 login-prod: init
 	aws sts get-caller-identity --profile $(.PROD_PROFILE) || aws sso login --profile=$(.PROD_PROFILE)
-	./node_modules/.bin/ssocreds -p $(.PROD_PROFILE) # https://github.com/serverless/serverless/issues/7567
 
 .PHONY: is-git-clean
 is-git-clean:
