@@ -55,7 +55,7 @@ pyasn1==0.5.0
     # via
     #   python-jose
     #   rsa
-pydantic==2.3.0
+pydantic==2.4.0
     # via okdata-aws
 pydantic-core==2.6.3
     # via pydantic
