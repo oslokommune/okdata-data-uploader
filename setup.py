@@ -19,7 +19,7 @@ setuptools.setup(
         "aws-xray-sdk",
         "jsonschema",
         "requests",
-        "okdata-aws",
+        "okdata-aws>=4.1",
         "okdata-resource-auth",
     ],
 )
