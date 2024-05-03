@@ -142,14 +142,17 @@ def test_handler_invalid_source_type(api_gateway_event, requests_mock):
     response = handler(event, None)
     assert response["statusCode"] == 400
     assert json.loads(response["body"]) == {
-        "message": "Invalid source.type 'database' for dataset: datasetid. Must be source.type='file'"
+        "message": "Invalid source.type 'database' for dataset: datasetid"
     }
 
 
 @freeze_time("2020-11-02T19:54:14.123456+00:00")
-def test_handler(api_gateway_event, requests_mock):
+@pytest.mark.parametrize("source_type", ["file", "api"])
+def test_handler(api_gateway_event, requests_mock, source_type):
     url = "https://api.data-dev.oslo.systems/metadata/datasets/datasetid"
-    response = json.dumps({"accessRights": "restricted", "source": {"type": "file"}})
+    response = json.dumps(
+        {"accessRights": "restricted", "source": {"type": source_type}}
+    )
     requests_mock.register_uri("GET", url, text=response, status_code=200)
 
     url = "https://api.data-dev.oslo.systems/metadata/datasets/datasetid/versions/1/editions/20190101T125959"
