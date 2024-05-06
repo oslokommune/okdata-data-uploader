@@ -92,8 +92,8 @@ def get_and_validate_dataset(dataset_id):
     dataset = response.json()
     source_type = dataset["source"]["type"]
 
-    if source_type != "file":
-        error_msg = f"Invalid source.type '{source_type}' for dataset: {dataset_id}. Must be source.type='file'"
+    if source_type not in ["file", "api"]:
+        error_msg = f"Invalid source.type '{source_type}' for dataset: {dataset_id}"
         raise InvalidSourceTypeError(error_msg)
 
     return dataset
