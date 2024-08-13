@@ -36,6 +36,20 @@ ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
 resource_authorizer = ResourceAuthorizer()
 
 
+def _split_edition_id(edition_id):
+    """Extract dataset ID and version from `edition_id`.
+
+    Raise `InvalidDatasetEditionError` if `edition_id` doesn't look like an
+    edition ID.
+    """
+    try:
+        dataset_id, version, _edition, *_ = edition_id.split("/")
+    except ValueError:
+        raise InvalidDatasetEditionError
+
+    return dataset_id, version
+
+
 @logging_wrapper
 @xray_recorder.capture("generate_signed_post")
 def handler(event, context):
@@ -46,7 +60,7 @@ def handler(event, context):
         log_add(filename=body["filename"], edition_id=body["editionId"])
         maybe_edition = body["editionId"]
 
-        dataset_id, dataset_version, *_ = maybe_edition.split("/")
+        dataset_id, dataset_version = _split_edition_id(maybe_edition)
         log_add(dataset_id=dataset_id)
 
         dataset = get_and_validate_dataset(dataset_id)
@@ -63,6 +77,8 @@ def handler(event, context):
         )
     except DatasetNotFoundError:
         return error_response(404, f"Dataset {dataset_id} does not exist")
+    except InvalidDatasetEditionError:
+        return error_response(422, "Invalid dataset edition format")
     except (SchemaError, Exception) as e:
         log_add(exc_info=e)
         return error_response(500, "Internal server error")
