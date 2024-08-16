@@ -3,10 +3,11 @@ import json
 
 import pytest
 from freezegun import freeze_time
-
 from okdata.resource_auth import ResourceAuthorizer
-from uploader.generate_signed_post import handler, ENABLE_AUTH
+
 from uploader.common import error_response
+from uploader.errors import InvalidDatasetEditionError
+from uploader.generate_signed_post import _split_edition_id, ENABLE_AUTH, handler
 
 
 @pytest.fixture(autouse=True)
@@ -101,6 +102,16 @@ def test_error_response():
     }
 
 
+def test_split_edition_id():
+    with pytest.raises(InvalidDatasetEditionError):
+        _split_edition_id("a/b")
+
+    assert _split_edition_id("a/b/c") == ("a", "b")
+
+    with pytest.raises(InvalidDatasetEditionError):
+        _split_edition_id("fubar")
+
+
 @pytest.mark.skipif(not ENABLE_AUTH, reason="Auth is disabled")
 def test_handler_403_when_not_authenticated(api_gateway_event, requests_mock):
     url = "https://api.data-dev.oslo.systems/metadata/datasets/datasetid"
@@ -129,6 +140,14 @@ def test_handler_invalid_json(api_gateway_event):
         json.loads(ret["body"])["message"]
         == "JSON document does not conform to the given schema"
     )
+
+
+def test_handler_invalid_edition_format(api_gateway_event):
+    event = api_gateway_event(
+        body=json.dumps({"editionId": "invalid", "filename": "foo.txt"})
+    )
+    res = handler(event, None)
+    assert res["statusCode"] == 422
 
 
 def test_handler_invalid_source_type(api_gateway_event, requests_mock):
