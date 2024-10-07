@@ -5,9 +5,12 @@ import pytest
 from freezegun import freeze_time
 from okdata.resource_auth import ResourceAuthorizer
 
-from uploader.common import error_response
+from uploader.common import error_response, split_edition_id
 from uploader.errors import InvalidDatasetEditionError
-from uploader.generate_signed_post import _split_edition_id, ENABLE_AUTH, handler
+from uploader.handlers.generate_signed_post import (
+    ENABLE_AUTH,
+    handler,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -104,12 +107,12 @@ def test_error_response():
 
 def test_split_edition_id():
     with pytest.raises(InvalidDatasetEditionError):
-        _split_edition_id("a/b")
+        split_edition_id("a/b")
 
-    assert _split_edition_id("a/b/c") == ("a", "b")
+    assert split_edition_id("a/b/c") == ("a", "b")
 
     with pytest.raises(InvalidDatasetEditionError):
-        _split_edition_id("fubar")
+        split_edition_id("fubar")
 
 
 @pytest.mark.skipif(not ENABLE_AUTH, reason="Auth is disabled")

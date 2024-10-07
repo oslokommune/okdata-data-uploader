@@ -19,6 +19,7 @@ from uploader.common import (
     generate_s3_path,
     generate_signed_post,
     create_status_trace,
+    split_edition_id,
 )
 from uploader.errors import (
     DataExistsError,
@@ -26,7 +27,7 @@ from uploader.errors import (
     InvalidSourceTypeError,
     DatasetNotFoundError,
 )
-from uploader.schema import request_schema
+from uploader.schema import get_model_schema
 
 patch_all()
 
@@ -36,31 +37,17 @@ ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
 resource_authorizer = ResourceAuthorizer()
 
 
-def _split_edition_id(edition_id):
-    """Extract dataset ID and version from `edition_id`.
-
-    Raise `InvalidDatasetEditionError` if `edition_id` doesn't look like an
-    edition ID.
-    """
-    try:
-        dataset_id, version, _edition, *_ = edition_id.split("/")
-    except ValueError:
-        raise InvalidDatasetEditionError
-
-    return dataset_id, version
-
-
 @logging_wrapper
 @xray_recorder.capture("generate_signed_post")
 def handler(event, context):
     try:
         body = json.loads(event["body"])
-        validate(body, request_schema)
+        validate(body, get_model_schema("uploadRequest"))
 
         log_add(filename=body["filename"], edition_id=body["editionId"])
         maybe_edition = body["editionId"]
 
-        dataset_id, dataset_version = _split_edition_id(maybe_edition)
+        dataset_id, dataset_version = split_edition_id(maybe_edition)
         log_add(dataset_id=dataset_id)
 
         dataset = get_and_validate_dataset(dataset_id)
@@ -114,7 +101,9 @@ def handler(event, context):
 
     try:
         s3_path = generate_s3_path(
-            dataset=dataset, edition_id=body["editionId"], filename=body["filename"]
+            dataset_metadata=dataset,
+            edition_id=body["editionId"],
+            filename=body["filename"],
         )
     except ValueError as e:
         return error_response(400, str(e))

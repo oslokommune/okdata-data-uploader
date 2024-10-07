@@ -37,7 +37,7 @@ def test_generate_s3_path_dataset_without_parent():
     dataset = {"Id": "my-dataset", "accessRights": "public"}
     editionId = "my-dataset/1/20200501"
     filename = "hello-world.csv"
-    path = generate_s3_path(dataset, editionId, filename)
+    path = generate_s3_path(dataset, editionId, filename=filename)
     res = "raw/green/my-dataset/version=1/edition=20200501/hello-world.csv"
     assert path == res
 
@@ -50,7 +50,7 @@ def test_generate_s3_path_dataset_with_parent():
     }
     editionId = "my-dataset/1/20200501"
     filename = "hello-world.csv"
-    path = generate_s3_path(dataset, editionId, filename)
+    path = generate_s3_path(dataset, editionId, filename=filename)
     res = "raw/green/my-parent-dataset/my-dataset/version=1/edition=20200501/hello-world.csv"
     assert path == res
 
@@ -59,7 +59,7 @@ def test_generate_s3_path_parent_id_is_null(requests_mock):
     dataset = {"Id": "my-dataset", "accessRights": "public", "parent_id": None}
     editionId = "my-dataset/1/20200501"
     filename = "hello-world.csv"
-    path = generate_s3_path(dataset, editionId, filename)
+    path = generate_s3_path(dataset, editionId, filename=filename)
     res = "raw/green/my-dataset/version=1/edition=20200501/hello-world.csv"
     assert path == res
 
