@@ -50,6 +50,7 @@ package:
   patterns:
     - '!**/*'
     - uploader/*.py
+    - uploader/handlers/*.py
     - doc/models/*.json
 
 functions:
