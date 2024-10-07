@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "title": "Push Events Response",
+  "required": ["editionId"],
+  "properties": {
+    "editionId": {
+      "type": "string",
+      "title": "Edition ID"
+    }
+  }
+}

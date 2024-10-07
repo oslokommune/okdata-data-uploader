@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "title": "Push Events Request",
+  "required": ["datasetId", "events"],
+  "properties": {
+    "datasetId": {
+      "type": "string",
+      "title": "Dataset ID"
+    },
+    "version": {
+      "type": "string",
+      "title": "Version",
+      "default": "1"
+    },
+    "events": {
+      "type": "array",
+      "title": "Events"
+    }
+  }
+}
