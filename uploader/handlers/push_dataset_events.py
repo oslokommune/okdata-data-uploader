@@ -71,7 +71,12 @@ def handler(event, context):
         log_add(exc_info=e)
         return error_response(500, "Internal server error")
 
-    s3_path = generate_s3_path(dataset, f"{dataset_id}/{version}/latest", "processed")
+    relative_path = generate_s3_path(
+        dataset, f"{dataset_id}/{version}/latest", "processed"
+    )
+    bucket_name = os.environ["BUCKET"]
+    s3_path = f"s3://{bucket_name}/{relative_path}"
+
     log_add(s3_path=s3_path)
 
     print(wr.s3.read_deltalake(s3_path, dtype_backend="pyarrow"))
