@@ -1,10 +1,14 @@
-frameworkVersion: ">=3.21.0 <4.0.0"
+frameworkVersion: ">=3.39.0 <4.0.0"
 
 service: data-uploader
 
 provider:
   name: aws
-  runtime: python3.11
+  ecr:
+    images:
+      okdata-data-uploader:
+        path: ./
+        platform: linux/amd64
   region: ${opt:region, 'eu-west-1'}
   endpointType: REGIONAL
   stage: ${opt:stage, 'dev'}
@@ -38,7 +42,6 @@ provider:
 plugins:
   - serverless-better-credentials # must be first
   - "@kakkuk/serverless-aws-apigateway-documentation"
-  - serverless-python-requirements
   - serverless-plugin-git-variables
 
 resources:
@@ -55,7 +58,10 @@ package:
 
 functions:
   generate_signed_post:
-    handler: uploader.handlers.generate_signed_post.handler
+    image:
+      name: okdata-data-uploader
+      command:
+        - uploader.handlers.generate_signed_post.handler
     timeout: 30
     events:
       - http:
@@ -87,7 +93,10 @@ functions:
                 responseModels:
                   "application/json": ErrorResponse
   push-dataset-events:
-    handler: uploader.handlers.push_dataset_events.handler
+    image:
+      name: okdata-data-uploader
+      command:
+        - uploader.handlers.push_dataset_events.handler
     timeout: 30
     events:
       - http:
@@ -118,10 +127,6 @@ functions:
                 responseModels:
                   "application/json": ErrorResponse
 custom:
-  pythonRequirements:
-    dockerizePip: non-linux
-    slim: false
-    usePoetry: false
   prune:
     automatic: true
     number: 3
