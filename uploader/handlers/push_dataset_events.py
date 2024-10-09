@@ -85,9 +85,12 @@ def handler(event, context):
 
     try:
         existing_dataset = wr.s3.read_deltalake(s3_path, dtype_backend="pyarrow")
-        merged_data = existing_dataset.merge(new_data)
+        merged_data = pd.concat([existing_dataset, new_data])
     except TableNotFoundError:
         merged_data = new_data
+
+    # Ensure that we have no index
+    merged_data = merged_data.reset_index(drop=True)
 
     return {}
 
