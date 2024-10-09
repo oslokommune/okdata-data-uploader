@@ -3,7 +3,9 @@ import os
 from json.decoder import JSONDecodeError
 
 import awswrangler as wr
+import pandas as pd
 from aws_xray_sdk.core import patch_all, xray_recorder
+from deltalake.exceptions import TableNotFoundError
 from jsonschema import validate, ValidationError, SchemaError
 
 from okdata.aws.logging import logging_wrapper, log_add
@@ -79,7 +81,15 @@ def handler(event, context):
 
     log_add(s3_path=s3_path)
 
-    print(wr.s3.read_deltalake(s3_path, dtype_backend="pyarrow"))
+    try:
+        existing_dataset = wr.s3.read_deltalake(s3_path, dtype_backend="pyarrow")
+    except TableNotFoundError:
+        existing_dataset = pd.DataFrame()
+
+    new_data = pd.DataFrame.from_dict(body["events"])
+    merged_data = existing_dataset.merge(new_data)
+
+    return {}
 
     # 1. Get latest edition data from processed (if exists)
     # 1.1 Create Delta Lake dataset
