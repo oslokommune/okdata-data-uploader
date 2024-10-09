@@ -3,6 +3,7 @@ import os
 from json.decoder import JSONDecodeError
 
 import awswrangler as wr
+import deltalake
 import pandas as pd
 from aws_xray_sdk.core import patch_all, xray_recorder
 from deltalake.exceptions import TableNotFoundError
@@ -92,10 +93,22 @@ def handler(event, context):
     # Ensure that we have no index
     merged_data = merged_data.reset_index(drop=True)
 
+    print("~~~~~~~~~~~~~~~~ MERGED DATA: ~~~~~~~~~~~~~~~~")
+    print(merged_data)
+
+    # TODO: Sjekke ut mode='append' ???
+    deltalake.write_deltalake("/tmp/test/", merged_data, mode="overwrite")
+    dt = deltalake.DeltaTable("/tmp/test/")
+    print("~~~~~~~~~~~~~~~~ DT: ~~~~~~~~~~~~~~~~")
+    print(dt)
+    print("~~~~~~~~~~~~~~~~ SCHEMA: ~~~~~~~~~~~~~~~~")
+    print(dt.schema())
+
     return {}
 
-    # 1. Get latest edition data from processed (if exists)
-    # 1.1 Create Delta Lake dataset
-    # 2. Attempt add data
-    # 2.0 Success: Write input events as edition in `raw`
-    # 2.1 Success: Write dataset to new edition in `processed`
+    # [X] 1. Get latest edition data from processed (if exists)
+    # [X] 1.1 Create Delta Lake dataset
+    # [X] 2. Attempt add data
+    # [ ] 2.-1 Create new edition
+    # [ ] 2.0 Success: Write input events as edition in `raw`
+    # [ ] 2.1 Success: Write dataset to new edition in `processed`
