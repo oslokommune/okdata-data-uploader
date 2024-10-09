@@ -81,13 +81,13 @@ def handler(event, context):
 
     log_add(s3_path=s3_path)
 
+    new_data = pd.DataFrame.from_dict(body["events"])
+
     try:
         existing_dataset = wr.s3.read_deltalake(s3_path, dtype_backend="pyarrow")
+        merged_data = existing_dataset.merge(new_data)
     except TableNotFoundError:
-        existing_dataset = pd.DataFrame()
-
-    new_data = pd.DataFrame.from_dict(body["events"])
-    merged_data = existing_dataset.merge(new_data)
+        merged_data = new_data
 
     return {}
 
