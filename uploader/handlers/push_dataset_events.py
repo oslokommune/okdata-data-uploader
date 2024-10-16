@@ -2,11 +2,7 @@ import json
 import os
 from json.decoder import JSONDecodeError
 
-import awswrangler as wr
-import deltalake
-import pandas as pd
 from aws_xray_sdk.core import patch_all, xray_recorder
-from deltalake.exceptions import TableNotFoundError
 from jsonschema import validate, ValidationError, SchemaError
 
 from okdata.aws.logging import logging_wrapper, log_add
@@ -17,9 +13,11 @@ from uploader.common import (
     error_response,
     generate_s3_path,
 )
+from uploader.dataset import append_to_dataset
 from uploader.errors import (
     InvalidSourceTypeError,
     DatasetNotFoundError,
+    MixedTypeError,
 )
 from uploader.schema import get_model_schema
 
@@ -82,33 +80,22 @@ def handler(event, context):
 
     log_add(s3_path=s3_path)
 
-    new_data = pd.DataFrame.from_dict(body["events"])
-
     try:
-        existing_dataset = wr.s3.read_deltalake(s3_path, dtype_backend="pyarrow")
-        merged_data = pd.concat([existing_dataset, new_data])
-    except TableNotFoundError:
-        merged_data = new_data
-
-    # Ensure that we have no index
-    merged_data = merged_data.reset_index(drop=True)
-
-    print("~~~~~~~~~~~~~~~~ MERGED DATA: ~~~~~~~~~~~~~~~~")
-    print(merged_data)
-
-    # TODO: Sjekke ut mode='append' ???
-    deltalake.write_deltalake("/tmp/test/", merged_data, mode="overwrite")
-    dt = deltalake.DeltaTable("/tmp/test/")
-    print("~~~~~~~~~~~~~~~~ DT: ~~~~~~~~~~~~~~~~")
-    print(dt)
-    print("~~~~~~~~~~~~~~~~ SCHEMA: ~~~~~~~~~~~~~~~~")
-    print(dt.schema())
-
-    return {}
+        append_to_dataset(s3_path, body["events"])
+    except MixedTypeError as e:
+        log_add(exc_info=e)
+        return error_response(400, str(e))
 
     # [X] 1. Get latest edition data from processed (if exists)
     # [X] 1.1 Create Delta Lake dataset
     # [X] 2. Attempt add data
+    # Må vi støtte arrays/dicts som verdier?
+    # Alt "inferres" som datetime (UTC) gitt ISO8601 format - støtte kun date og time?
     # [ ] 2.-1 Create new edition
     # [ ] 2.0 Success: Write input events as edition in `raw`
     # [ ] 2.1 Success: Write dataset to new edition in `processed`
+
+    return {
+        "statusCode": 200,
+        "body": "",
+    }

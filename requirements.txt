@@ -34,7 +34,9 @@ charset-normalizer==3.2.0
 cryptography==43.0.1
     # via jwcrypto
 deltalake==0.19.2
-    # via awswrangler
+    # via
+    #   awswrangler
+    #   okdata-data-uploader (setup.py)
 deprecation==2.1.0
     # via python-keycloak
 idna==3.7
@@ -69,11 +71,14 @@ packaging==23.1
     #   awswrangler
     #   deprecation
 pandas==2.2.3
-    # via awswrangler
+    # via
+    #   awswrangler
+    #   okdata-data-uploader (setup.py)
 pyarrow==17.0.0
     # via
     #   awswrangler
     #   deltalake
+    #   okdata-data-uploader (setup.py)
 pycparser==2.22
     # via cffi
 python-dateutil==2.8.2
