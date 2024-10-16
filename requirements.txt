@@ -65,7 +65,9 @@ okdata-aws==4.1.0
 okdata-resource-auth==0.1.4
     # via okdata-data-uploader (setup.py)
 okdata-sdk==3.1.1
-    # via okdata-aws
+    # via
+    #   okdata-aws
+    #   okdata-data-uploader (setup.py)
 packaging==23.1
     # via
     #   awswrangler

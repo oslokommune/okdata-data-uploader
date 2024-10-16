@@ -22,6 +22,7 @@ setuptools.setup(
         "jsonschema",
         "okdata-aws>=4.1",
         "okdata-resource-auth",
+        "okdata-sdk",
         "pandas",
         "pyarrow",
         "requests",
