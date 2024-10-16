@@ -18,9 +18,12 @@ setuptools.setup(
         "aws-xray-sdk",
         "awswrangler[deltalake]",
         "boto3",
+        "deltalake",
         "jsonschema",
         "okdata-aws>=4.1",
         "okdata-resource-auth",
+        "pandas",
+        "pyarrow",
         "requests",
     ],
 )
