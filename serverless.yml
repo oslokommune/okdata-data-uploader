@@ -35,7 +35,8 @@ provider:
     KEYCLOAK_SERVER: ${ssm:/dataplatform/shared/keycloak-server-url}
     KEYCLOAK_REALM: api-catalog
     RESOURCE_SERVER_CLIENT_ID: "okdata-resource-server"
-    CLIENT_ID: data-uploader
+    OKDATA_ENVIRONMENT: ${self:custom.resolvedStage}
+    OKDATA_CLIENT_ID: ${self:service}
   tags:
     GIT_REV: ${git:branch}:${git:sha1}
 

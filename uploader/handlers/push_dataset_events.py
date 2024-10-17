@@ -2,16 +2,19 @@ import json
 import os
 from json.decoder import JSONDecodeError
 
+import awswrangler as wr
 from aws_xray_sdk.core import patch_all, xray_recorder
 from jsonschema import validate, ValidationError, SchemaError
 
 from okdata.aws.logging import logging_wrapper, log_add
 from okdata.resource_auth import ResourceAuthorizer
+from okdata.sdk.data.dataset import Dataset
 
 from uploader.common import (
     get_and_validate_dataset,
     error_response,
     generate_s3_path,
+    sdk_config,
 )
 from uploader.dataset import append_to_dataset
 from uploader.errors import (
@@ -72,19 +75,33 @@ def handler(event, context):
         log_add(exc_info=e)
         return error_response(500, "Internal server error")
 
-    relative_path = generate_s3_path(
-        dataset, f"{dataset_id}/{version}/latest", "processed"
+    source_s3_path = generate_s3_path(
+        dataset, f"{dataset_id}/{version}/latest", "processed", absolute=True
     )
-    bucket_name = os.environ["BUCKET"]
-    s3_path = f"s3://{bucket_name}/{relative_path}"
 
-    log_add(s3_path=s3_path)
+    log_add(source_s3_path=source_s3_path)
 
     try:
-        append_to_dataset(s3_path, body["events"])
+        merged_data = append_to_dataset(source_s3_path, body["events"])
     except MixedTypeError as e:
         log_add(exc_info=e)
         return error_response(400, str(e))
+
+    edition = Dataset(sdk_config()).auto_create_edition(dataset_id, version)
+
+    target_s3_path = generate_s3_path(
+        dataset, edition["Id"], "processed", absolute=True
+    )
+
+    log_add(target_s3_path=target_s3_path)
+
+    # wr.s3.to_deltalake(
+    #     target_s3_path,
+    #     merged_data,
+    #     mode="overwrite",
+    #     schema_mode="merge",
+    #     s3_allow_unsafe_rename=True,
+    # )
 
     # [X] 1. Get latest edition data from processed (if exists)
     # [X] 1.1 Create Delta Lake dataset
