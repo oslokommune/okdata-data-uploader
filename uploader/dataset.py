@@ -32,24 +32,7 @@ def append_to_dataset(s3_path, data):
             f"Mixed types detected in column(s): {', '.join(mixed_columns)}"
         )
 
-    # Write raw events to new edition `raw`
-    # create_raw_edition(data)
-
-    # Write data to new edition and `latest` in `processed`
-
-    # `okdata-pipeline`
-    # def write_data_to_latest(s3_sources, output_prefix):
-    #     output_prefix_latest = re.sub("edition=.*/", "latest/", output_prefix)
-    #     s3_service.delete_from_prefix(output_prefix_latest)
-    #     copy_data(s3_sources, output_prefix_latest)
-
-    wr.s3.to_deltalake(
-        s3_path,
-        merged_data,
-        mode="overwrite",
-        schema_mode="merge",
-        s3_allow_unsafe_rename=True,
-    )
+    return merged_data
 
 
 def dataframe_from_dict(data):

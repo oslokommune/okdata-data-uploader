@@ -11,9 +11,13 @@ from uploader.errors import (
     InvalidDatasetEditionError,
     InvalidSourceTypeError,
 )
-from botocore.client import Config
+from botocore.client import Config as BotoConfig
 from datetime import datetime
 
+import functools
+
+from okdata.aws.ssm import get_secret
+from okdata.sdk.config import Config
 
 BASE_URL = os.environ["METADATA_API_URL"]
 STATUS_API_URL = os.environ["STATUS_API_URL"]
@@ -30,6 +34,7 @@ def generate_s3_path(
     edition_id: str,
     stage: str = "raw",
     filename: str | None = None,
+    absolute: bool = False,
 ):
     dataset_id, version, edition = edition_id.split("/")
     confidentiality = get_confidentiality(dataset_metadata)
@@ -47,6 +52,10 @@ def generate_s3_path(
     if filename:
         path.append(filename)
 
+    if absolute:
+        bucket_name = os.environ["BUCKET"]
+        path = [f"s3://{bucket_name}"] + path
+
     return "/".join(path)
 
 
@@ -55,7 +64,7 @@ def generate_signed_post(bucket, key):
     s3 = boto3.client(
         "s3",
         region_name="eu-west-1",
-        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+        config=BotoConfig(signature_version="s3v4", s3={"addressing_style": "path"}),
     )
 
     # TODO: Add more conditions!
@@ -195,3 +204,12 @@ def split_edition_id(edition_id):
         raise InvalidDatasetEditionError
 
     return dataset_id, version
+
+
+@functools.cache
+def sdk_config():
+    config = Config()
+    config.config["client_secret"] = get_secret(
+        "/dataplatform/data-uploader/keycloak-client-secret"
+    )
+    return config
