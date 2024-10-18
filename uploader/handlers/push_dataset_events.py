@@ -89,19 +89,29 @@ def handler(event, context):
 
     edition = Dataset(sdk_config()).auto_create_edition(dataset_id, version)
 
-    target_s3_path = generate_s3_path(
+    target_s3_path_processed = generate_s3_path(
         dataset, edition["Id"], "processed", absolute=True
     )
+    target_s3_path_raw = generate_s3_path(dataset, edition["Id"], "raw", absolute=True)
 
     log_add(target_s3_path=target_s3_path)
 
-    # wr.s3.to_deltalake(
-    #     target_s3_path,
-    #     merged_data,
-    #     mode="overwrite",
-    #     schema_mode="merge",
-    #     s3_allow_unsafe_rename=True,
-    # )
+    # Write the raw input data
+    s3.put_object(
+        Body=json.dumps(body["events"]),
+        Bucket=os.environ["BUCKET"],
+        Key=f"{target_s3_path_raw}/data.json",
+    )
+
+    # Write merged data to both the new edition and to `latest`
+    for path in target_s3_path_processed, source_s3_path:
+        wr.s3.to_deltalake(
+            df=merged_data,
+            path=path,
+            mode="overwrite",
+            schema_mode="merge",
+            s3_allow_unsafe_rename=True,
+        )
 
     # [X] 1. Get latest edition data from processed (if exists)
     # [X] 1.1 Create Delta Lake dataset
