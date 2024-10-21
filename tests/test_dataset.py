@@ -1,11 +1,7 @@
 import re
-import tempfile
 from datetime import datetime
-from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-import awswrangler as wr
-import deltalake as dl
 import pandas as pd
 import pyarrow as pa
 import pytest
@@ -61,62 +57,6 @@ def test_dataframe_from_dict(data, schema):
         assert dtype == pd.ArrowDtype(schema[col])
 
 
-def write_deltalake(path, data, **kwargs):
-    # https://github.com/aws/aws-sdk-pandas/blob/main/awswrangler/s3/_write_deltalake.py
-    if "s3_allow_unsafe_rename" in kwargs:
-        del kwargs["s3_allow_unsafe_rename"]
-
-    return dl.write_deltalake(
-        table_or_uri=path,
-        data=dataframe_from_dict(data),
-        **kwargs,
-    )
-
-
-def read_deltalake(path):
-    # https://github.com/aws/aws-sdk-pandas/blob/main/awswrangler/s3/_read_deltalake.py
-    return (
-        dl.DeltaTable(
-            table_uri=path,
-        )
-        .to_pyarrow_table()
-        .to_pandas(
-            **wr._data_types.pyarrow2pandas_defaults(
-                use_threads=False, kwargs={}, dtype_backend="pyarrow"
-            )
-        )
-    )
-
-
-@pytest.fixture(scope="function")
-def temp_dir():
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        yield tmpdirname
-
-
-@pytest.fixture
-def mocked_wr_read_deltalake(temp_dir, existing_data):
-    def side_effect(*args, **kwargs):
-        if not existing_data:
-            raise dl.exceptions.TableNotFoundError
-
-        write_deltalake(temp_dir, existing_data)
-
-        return read_deltalake(temp_dir)
-
-    with patch.object(wr.s3, "read_deltalake", side_effect=side_effect):
-        yield
-
-
-@pytest.fixture
-def mocked_wr_to_deltalake(temp_dir):
-    def side_effect(path, data, **kwargs):
-        write_deltalake(temp_dir, data, **kwargs)
-
-    with patch.object(wr.s3, "to_deltalake", side_effect=side_effect):
-        yield
-
-
 @pytest.mark.parametrize(
     "existing_data,new_data",
     [
@@ -125,22 +65,26 @@ def mocked_wr_to_deltalake(temp_dir):
         ([{"a": 1, "b": "foo"}], [{"c": 2}]),
         ([], [{"a": 2, "b": "bar", "c": False}]),
         ([], [{"a": 2, "b": "bar", "c": None}]),
+        ([], []),
+        ([{"a": 1}], []),
     ],
 )
 def test_append_to_dataset(
     temp_dir,
     mocked_wr_read_deltalake,
-    mocked_wr_to_deltalake,
     existing_data,
     new_data,
 ):
-    append_to_dataset("s3://foo/bar", new_data)
+    target_df = pd.concat(
+        [
+            dataframe_from_dict(existing_data),
+            dataframe_from_dict(new_data),
+        ]
+    ).reset_index(drop=True)
 
-    df = read_deltalake(temp_dir)
-    df2 = pd.concat([dataframe_from_dict(existing_data), dataframe_from_dict(new_data)])
-    df2 = df2.reset_index(drop=True)
+    merged_df = append_to_dataset("s3://foo/bar", new_data)
 
-    assert df.equals(df2)
+    assert merged_df.equals(target_df)
 
 
 @pytest.mark.parametrize(
