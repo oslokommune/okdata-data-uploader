@@ -120,6 +120,10 @@ def handler(event, context):
         )
 
     return {
-        "statusCode": 200,
-        "body": "",
+        "statusCode": 201,
+        "body": json.dumps(
+            {
+                "editionId": edition["Id"],
+            }
+        ),
     }

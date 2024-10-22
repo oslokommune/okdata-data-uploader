@@ -124,6 +124,9 @@ functions:
               - statusCode: "403"
                 responseModels:
                   "application/json": ErrorResponse
+              - statusCode: "404"
+                responseModels:
+                  "application/json": ErrorResponse
               - statusCode: "500"
                 responseModels:
                   "application/json": ErrorResponse
