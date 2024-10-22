@@ -3,6 +3,7 @@ import os
 from json.decoder import JSONDecodeError
 
 import awswrangler as wr
+import boto3
 from aws_xray_sdk.core import patch_all, xray_recorder
 from jsonschema import validate, ValidationError, SchemaError
 
@@ -92,7 +93,7 @@ def handler(event, context):
     target_s3_path_processed = generate_s3_path(
         dataset, edition["Id"], "processed", absolute=True
     )
-    target_s3_path_raw = generate_s3_path(dataset, edition["Id"], "raw", absolute=True)
+    target_s3_path_raw = generate_s3_path(dataset, edition["Id"], "raw")
 
     log_add(
         target_s3_path_processed=target_s3_path_processed,
@@ -100,11 +101,12 @@ def handler(event, context):
     )
 
     # Write the raw input data
-    # s3.put_object(
-    #     Body=json.dumps(body["events"]),
-    #     Bucket=os.environ["BUCKET"],
-    #     Key=f"{target_s3_path_raw}/data.json",
-    # )
+    s3 = boto3.client("s3", region_name=os.environ["AWS_REGION"])
+    s3.put_object(
+        Body=json.dumps(body["events"]),
+        Bucket=os.environ["BUCKET"],
+        Key=f"{target_s3_path_raw}/data.json",
+    )
 
     # Write merged data to both the new edition and to `latest`
     for path in target_s3_path_processed, source_s3_path:
@@ -115,15 +117,6 @@ def handler(event, context):
             schema_mode="merge",
             s3_allow_unsafe_rename=True,
         )
-
-    # [X] 1. Get latest edition data from processed (if exists)
-    # [X] 1.1 Create Delta Lake dataset
-    # [X] 2. Attempt add data
-    # Må vi støtte arrays/dicts som verdier?
-    # Alt "inferres" som datetime (UTC) gitt ISO8601 format - støtte kun date og time?
-    # [ ] 2.-1 Create new edition
-    # [ ] 2.0 Success: Write input events as edition in `raw`
-    # [ ] 2.1 Success: Write dataset to new edition in `processed`
 
     return {
         "statusCode": 200,

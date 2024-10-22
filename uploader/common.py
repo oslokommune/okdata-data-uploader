@@ -63,7 +63,7 @@ def generate_signed_post(bucket, key):
     # Path adressing style (which needs region specified) used because CORS doesn't propagate on global URIs immediately
     s3 = boto3.client(
         "s3",
-        region_name="eu-west-1",
+        region_name=os.environ["AWS_REGION"],
         config=BotoConfig(signature_version="s3v4", s3={"addressing_style": "path"}),
     )
 
