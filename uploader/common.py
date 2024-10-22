@@ -1,23 +1,22 @@
-import requests
-import os
-import json
 import boto3
+import functools
+import json
+import os
+import requests
 import uuid
+from datetime import datetime
 
+from botocore.client import Config as BotoConfig
 from okdata.aws.logging import log_duration
+from okdata.aws.ssm import get_secret
+from okdata.sdk.config import Config
+
 from uploader.errors import (
     DataExistsError,
     DatasetNotFoundError,
     InvalidDatasetEditionError,
     InvalidSourceTypeError,
 )
-from botocore.client import Config as BotoConfig
-from datetime import datetime
-
-import functools
-
-from okdata.aws.ssm import get_secret
-from okdata.sdk.config import Config
 
 BASE_URL = os.environ["METADATA_API_URL"]
 STATUS_API_URL = os.environ["STATUS_API_URL"]
