@@ -1,6 +1,3 @@
-from datetime import datetime
-from zoneinfo import ZoneInfo
-
 import pandas as pd
 import pyarrow as pa
 import pytest
@@ -29,12 +26,8 @@ from uploader.errors import InvalidTypeError
         ([{"a": True}, {"a": False}, {"a": None}], {"a": pa.bool_()}),
         (
             [
-                {"a": datetime.now().isoformat()},
-                {
-                    "a": datetime.now()
-                    .replace(tzinfo=ZoneInfo("Europe/Oslo"))
-                    .isoformat()
-                },
+                {"a": "2024-10-22T14:43:47.764186"},
+                {"a": "2024-10-22T14:44:41.038797+02:00"},
             ],
             {"a": pa.timestamp("us", tz="UTC")},
         ),
@@ -90,7 +83,7 @@ def test_append_to_dataset(
     "existing_data,new_data",
     [
         ([{"invalid_column": 1}], [{"invalid_column": "2"}]),
-        ([{"invalid_column": datetime.now().isoformat()}], [{"invalid_column": "-"}]),
+        ([{"invalid_column": "2024-10-22T14:43:31.012588"}], [{"invalid_column": "-"}]),
     ],
 )
 def test_append_to_dataset_mixed_types(
