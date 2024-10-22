@@ -14,7 +14,8 @@
     },
     "events": {
       "type": "array",
-      "title": "Events"
+      "title": "Events",
+      "minItems": 1
     }
   }
 }

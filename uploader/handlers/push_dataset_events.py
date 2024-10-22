@@ -6,7 +6,6 @@ import awswrangler as wr
 import boto3
 from aws_xray_sdk.core import patch_all, xray_recorder
 from jsonschema import validate, ValidationError, SchemaError
-
 from okdata.aws.logging import logging_wrapper, log_add
 from okdata.resource_auth import ResourceAuthorizer
 from okdata.sdk.data.dataset import Dataset
@@ -51,7 +50,9 @@ def handler(event, context):
         return error_response(400, "Body is not a valid JSON document")
     except ValidationError as e:
         log_add(exc_info=e)
-        return error_response(400, "JSON document does not conform to the given schema")
+        return error_response(
+            400, f"JSON document does not conform to the given schema: {e.message}"
+        )
     except (SchemaError, Exception) as e:
         log_add(exc_info=e)
         return error_response(500, "Internal server error")
