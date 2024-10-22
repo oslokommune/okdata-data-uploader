@@ -21,7 +21,7 @@ from uploader.dataset import append_to_dataset
 from uploader.errors import (
     InvalidSourceTypeError,
     DatasetNotFoundError,
-    MixedTypeError,
+    InvalidTypeError,
 )
 from uploader.schema import get_model_schema
 
@@ -84,7 +84,7 @@ def handler(event, context):
 
     try:
         merged_data = append_to_dataset(source_s3_path, body["events"])
-    except MixedTypeError as e:
+    except InvalidTypeError as e:
         log_add(exc_info=e)
         return error_response(400, str(e))
 

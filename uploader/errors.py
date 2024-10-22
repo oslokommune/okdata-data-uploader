@@ -14,5 +14,5 @@ class DatasetNotFoundError(Exception):
     pass
 
 
-class MixedTypeError(Exception):
+class InvalidTypeError(Exception):
     pass

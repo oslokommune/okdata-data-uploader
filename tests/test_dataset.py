@@ -1,4 +1,3 @@
-import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -10,7 +9,7 @@ from uploader.dataset import (
     append_to_dataset,
     dataframe_from_dict,
 )
-from uploader.errors import MixedTypeError
+from uploader.errors import InvalidTypeError
 
 
 @pytest.mark.parametrize(
@@ -90,8 +89,8 @@ def test_append_to_dataset(
 @pytest.mark.parametrize(
     "existing_data,new_data",
     [
-        ([{"a": 1}], [{"a": "2"}]),
-        ([{"a": datetime.now().isoformat()}], [{"a": "-"}]),
+        ([{"invalid_column": 1}], [{"invalid_column": "2"}]),
+        ([{"invalid_column": datetime.now().isoformat()}], [{"invalid_column": "-"}]),
     ],
 )
 def test_append_to_dataset_mixed_types(
@@ -99,8 +98,5 @@ def test_append_to_dataset_mixed_types(
     existing_data,
     new_data,
 ):
-    with pytest.raises(
-        MixedTypeError,
-        match=re.escape("Mixed types detected in column(s): a"),
-    ):
+    with pytest.raises(InvalidTypeError, match=r"invalid_column"):
         append_to_dataset("s3://foo/bar", new_data)

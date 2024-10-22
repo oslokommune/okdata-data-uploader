@@ -3,7 +3,7 @@ import pandas as pd
 import pyarrow as pa
 from deltalake.exceptions import TableNotFoundError
 
-from uploader.errors import MixedTypeError
+from uploader.errors import InvalidTypeError
 
 
 def append_to_dataset(s3_path, data):
@@ -28,8 +28,8 @@ def append_to_dataset(s3_path, data):
     mixed_columns = [c for c in merged_data if merged_data[c].dtype == "object"]
 
     if mixed_columns:
-        raise MixedTypeError(
-            f"Mixed types detected in column(s): {', '.join(mixed_columns)}"
+        raise InvalidTypeError(
+            f"Invalid or mixed types detected in column(s): {', '.join(mixed_columns)}"
         )
 
     return merged_data
