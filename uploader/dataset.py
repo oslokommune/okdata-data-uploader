@@ -50,6 +50,12 @@ def _infer_column_dtype_from_input(col):
     # dtype. If it fails, keep existing string type.
     if getattr(col.dtypes, "pyarrow_dtype", None) == "string":
         try:
+            series = pd.to_datetime(col, format="%Y-%m-%d")
+            return series.astype(pd.ArrowDtype(pa.date64()))
+        except ValueError:
+            pass
+
+        try:
             series = pd.to_datetime(col, format="ISO8601", utc=True)
             return series.astype(pd.ArrowDtype(pa.timestamp("us", tz="UTC")))
         except ValueError:
