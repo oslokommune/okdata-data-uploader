@@ -26,8 +26,6 @@ from uploader.schema import get_model_schema
 
 patch_all()
 
-ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
-
 resource_authorizer = ResourceAuthorizer()
 
 
@@ -62,9 +60,9 @@ def handler(event, context):
     has_access = resource_authorizer.has_access(
         token, "okdata:dataset:write", f"okdata:dataset:{dataset_id}"
     )
-    log_add(enable_auth=ENABLE_AUTH, has_access=has_access)
+    log_add(has_access=has_access)
 
-    if ENABLE_AUTH and not has_access:
+    if not has_access:
         return error_response(403, "Forbidden")
 
     try:
