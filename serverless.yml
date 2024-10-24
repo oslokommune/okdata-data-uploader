@@ -1,10 +1,14 @@
-frameworkVersion: ">=3.21.0 <4.0.0"
+frameworkVersion: ">=3.39.0 <4.0.0"
 
 service: data-uploader
 
 provider:
   name: aws
-  runtime: python3.11
+  ecr:
+    images:
+      okdata-data-uploader:
+        path: ./
+        platform: linux/amd64
   region: ${opt:region, 'eu-west-1'}
   endpointType: REGIONAL
   stage: ${opt:stage, 'dev'}
@@ -31,14 +35,14 @@ provider:
     KEYCLOAK_SERVER: ${ssm:/dataplatform/shared/keycloak-server-url}
     KEYCLOAK_REALM: api-catalog
     RESOURCE_SERVER_CLIENT_ID: "okdata-resource-server"
-    CLIENT_ID: data-uploader
+    OKDATA_ENVIRONMENT: ${self:custom.resolvedStage}
+    OKDATA_CLIENT_ID: ${self:service}
   tags:
     GIT_REV: ${git:branch}:${git:sha1}
 
 plugins:
   - serverless-better-credentials # must be first
   - "@kakkuk/serverless-aws-apigateway-documentation"
-  - serverless-python-requirements
   - serverless-plugin-git-variables
 
 resources:
@@ -50,11 +54,15 @@ package:
   patterns:
     - '!**/*'
     - uploader/*.py
+    - uploader/handlers/*.py
     - doc/models/*.json
 
 functions:
   generate_signed_post:
-    handler: uploader.generate_signed_post.handler
+    image:
+      name: okdata-data-uploader
+      command:
+        - uploader.handlers.generate_signed_post.handler
     timeout: 30
     events:
       - http:
@@ -85,11 +93,44 @@ functions:
               - statusCode: "500"
                 responseModels:
                   "application/json": ErrorResponse
+  push-dataset-events:
+    image:
+      name: okdata-data-uploader
+      command:
+        - uploader.handlers.push_dataset_events.handler
+    timeout: 30
+    events:
+      - http:
+          path: /events
+          method: post
+          cors: true
+          authorizer:
+            arn: arn:aws:lambda:${self:provider.region}:${aws:accountId}:function:keycloak-authorizer-${self:custom.resolvedStage}-authenticate
+            resultTtlInSeconds: 300
+            identitySource: method.request.header.Authorization
+            identityValidationExpression: "^(b|B)earer [-0-9a-zA-Z\\._]*$"
+            type: token
+          documentation:
+            summary: Push events to an event dataset
+            requestModels:
+              "application/json": UploadRequest
+            methodResponses:
+              - statusCode: "201"
+                responseModels:
+                  "application/json": UploadResponse
+              - statusCode: "400"
+                responseModels:
+                  "application/json": ErrorResponse
+              - statusCode: "403"
+                responseModels:
+                  "application/json": ErrorResponse
+              - statusCode: "404"
+                responseModels:
+                  "application/json": ErrorResponse
+              - statusCode: "500"
+                responseModels:
+                  "application/json": ErrorResponse
 custom:
-  pythonRequirements:
-    dockerizePip: non-linux
-    slim: false
-    usePoetry: false
   prune:
     automatic: true
     number: 3
@@ -108,6 +149,14 @@ custom:
         description: Response object with the presigned post url and parameters to POST to S3
         contentType: "application/json"
         schema: ${file(doc/models/uploadResponse.json)}
+      - name: PushEventsRequest
+        description: Request to push datasets events
+        contentType: "application/json"
+        schema: ${file(doc/models/pushEventsRequest.json)}
+      - name: PushEventsResponse
+        description: Response object with resulting edition ID
+        contentType: "application/json"
+        schema: ${file(doc/models/pushEventsResponse.json)}
       - name: ErrorResponse
         description: Error response
         contentType: "application/json"

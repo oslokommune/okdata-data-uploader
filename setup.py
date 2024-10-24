@@ -15,11 +15,16 @@ setuptools.setup(
     url="https://github.com/oslokommune/okdata-data-uploader",
     packages=setuptools.find_packages(),
     install_requires=[
-        "boto3",
         "aws-xray-sdk",
+        "awswrangler[deltalake]",
+        "boto3",
+        "deltalake",
         "jsonschema",
-        "requests",
         "okdata-aws>=4.1",
         "okdata-resource-auth",
+        "okdata-sdk",
+        "pandas",
+        "pyarrow",
+        "requests",
     ],
 )

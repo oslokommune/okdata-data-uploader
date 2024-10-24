@@ -12,3 +12,7 @@ class InvalidSourceTypeError(Exception):
 
 class DatasetNotFoundError(Exception):
     pass
+
+
+class InvalidTypeError(Exception):
+    pass

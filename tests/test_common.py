@@ -37,7 +37,7 @@ def test_generate_s3_path_dataset_without_parent():
     dataset = {"Id": "my-dataset", "accessRights": "public"}
     editionId = "my-dataset/1/20200501"
     filename = "hello-world.csv"
-    path = generate_s3_path(dataset, editionId, filename)
+    path = generate_s3_path(dataset, editionId, filename=filename)
     res = "raw/green/my-dataset/version=1/edition=20200501/hello-world.csv"
     assert path == res
 
@@ -50,16 +50,49 @@ def test_generate_s3_path_dataset_with_parent():
     }
     editionId = "my-dataset/1/20200501"
     filename = "hello-world.csv"
-    path = generate_s3_path(dataset, editionId, filename)
+    path = generate_s3_path(dataset, editionId, filename=filename)
     res = "raw/green/my-parent-dataset/my-dataset/version=1/edition=20200501/hello-world.csv"
     assert path == res
+
+
+@pytest.mark.parametrize(
+    "access_rights,confidentiality",
+    [("public", "green"), ("restricted", "yellow"), ("non-public", "red")],
+)
+def test_generate_s3_path_access_rights(access_rights, confidentiality):
+    dataset = {"Id": "foo", "accessRights": access_rights}
+    assert (
+        generate_s3_path(dataset, "foo/1/bar")
+        == f"raw/{confidentiality}/foo/version=1/edition=bar"
+    )
+
+
+def test_generate_s3_path_with_stage():
+    dataset = {"Id": "foo", "accessRights": "public"}
+    assert (
+        generate_s3_path(dataset, "foo/1/bar", stage="processed")
+        == "processed/green/foo/version=1/edition=bar"
+    )
+
+
+def test_generate_s3_path_latest_edition():
+    dataset = {"Id": "foo", "accessRights": "public"}
+    assert generate_s3_path(dataset, "foo/1/latest") == "raw/green/foo/version=1/latest"
+
+
+def test_generate_s3_path_absolute():
+    dataset = {"Id": "foo", "accessRights": "public"}
+    assert (
+        generate_s3_path(dataset, "foo/1/bar", absolute=True)
+        == "s3://testbucket/raw/green/foo/version=1/edition=bar"
+    )
 
 
 def test_generate_s3_path_parent_id_is_null(requests_mock):
     dataset = {"Id": "my-dataset", "accessRights": "public", "parent_id": None}
     editionId = "my-dataset/1/20200501"
     filename = "hello-world.csv"
-    path = generate_s3_path(dataset, editionId, filename)
+    path = generate_s3_path(dataset, editionId, filename=filename)
     res = "raw/green/my-dataset/version=1/edition=20200501/hello-world.csv"
     assert path == res
 
@@ -177,6 +210,21 @@ def test_get_and_validate_dataset_invalid_source_type(requests_mock):
 
     with pytest.raises(InvalidSourceTypeError):
         get_and_validate_dataset(dataset_id)
+
+
+def test_get_and_validate_dataset_custom_source_type(requests_mock):
+    dataset_id = "my-dataset"
+    url = f"https://api.data-dev.oslo.systems/metadata/datasets/{dataset_id}"
+    response = json.dumps(
+        {"Id": dataset_id, "source": {"type": "event"}, "accessRights": "public"}
+    )
+    requests_mock.register_uri("GET", url, text=response, status_code=200)
+
+    assert get_and_validate_dataset(dataset_id, "event") == {
+        "Id": dataset_id,
+        "source": {"type": "event"},
+        "accessRights": "public",
+    }
 
 
 def test_get_and_validate_dataset_not_found(requests_mock):

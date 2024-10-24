@@ -1,18 +1,22 @@
-import requests
-import os
-import json
 import boto3
+import functools
+import json
+import os
+import requests
 import uuid
+from datetime import datetime
 
+from botocore.client import Config as BotoConfig
 from okdata.aws.logging import log_duration
+from okdata.aws.ssm import get_secret
+from okdata.sdk.config import Config
+
 from uploader.errors import (
     DataExistsError,
     DatasetNotFoundError,
+    InvalidDatasetEditionError,
     InvalidSourceTypeError,
 )
-from botocore.client import Config
-from datetime import datetime
-
 
 BASE_URL = os.environ["METADATA_API_URL"]
 STATUS_API_URL = os.environ["STATUS_API_URL"]
@@ -24,22 +28,42 @@ CONFIDENTIALITY_MAP = {
 }
 
 
-def generate_s3_path(dataset: dict, edition_id: str, filename: str):
+def generate_s3_path(
+    dataset_metadata: dict,
+    edition_id: str,
+    stage: str = "raw",
+    filename: str | None = None,
+    absolute: bool = False,
+):
     dataset_id, version, edition = edition_id.split("/")
-    confidentiality = get_confidentiality(dataset)
-    s3_dataset_path_prefix = f"raw/{confidentiality}"
-    if dataset.get("parent_id", None):
-        parent_path = f"{dataset['parent_id']}"
+    confidentiality = get_confidentiality(dataset_metadata)
+    s3_dataset_path_prefix = f"{stage}/{confidentiality}"
+
+    if dataset_metadata.get("parent_id", None):
+        parent_path = f"{dataset_metadata['parent_id']}"
         s3_dataset_path_prefix = f"{s3_dataset_path_prefix}/{parent_path}"
-    return f"{s3_dataset_path_prefix}/{dataset_id}/version={version}/edition={edition}/{filename}"
+
+    if edition != "latest":
+        edition = f"edition={edition}"
+
+    path = [s3_dataset_path_prefix, dataset_id, f"version={version}", edition]
+
+    if filename:
+        path.append(filename)
+
+    if absolute:
+        bucket_name = os.environ["BUCKET"]
+        path = [f"s3://{bucket_name}"] + path
+
+    return "/".join(path)
 
 
 def generate_signed_post(bucket, key):
     # Path adressing style (which needs region specified) used because CORS doesn't propagate on global URIs immediately
     s3 = boto3.client(
         "s3",
-        region_name="eu-west-1",
-        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+        region_name=os.environ["AWS_REGION"],
+        config=BotoConfig(signature_version="s3v4", s3={"addressing_style": "path"}),
     )
 
     # TODO: Add more conditions!
@@ -80,7 +104,7 @@ def error_response(status, message):
     }
 
 
-def get_and_validate_dataset(dataset_id):
+def get_and_validate_dataset(dataset_id, source_type="file"):
     url = f"{BASE_URL}/datasets/{dataset_id}"
     response = requests.get(url)
 
@@ -90,10 +114,10 @@ def get_and_validate_dataset(dataset_id):
     response.raise_for_status()
 
     dataset = response.json()
-    source_type = dataset["source"]["type"]
+    dataset_source_type = dataset["source"]["type"]
 
-    if source_type != "file":
-        error_msg = f"Invalid source.type '{source_type}' for dataset: {dataset_id}. Must be source.type='file'"
+    if source_type != dataset_source_type:
+        error_msg = f"Invalid source.type '{dataset_source_type}' for dataset: {dataset_id}. Must be source.type='{source_type}'"
         raise InvalidSourceTypeError(error_msg)
 
     return dataset
@@ -165,3 +189,26 @@ def create_edition(token, editionId):
 
     id = result.text.replace('"', "")
     return id
+
+
+def split_edition_id(edition_id):
+    """Extract dataset ID and version from `edition_id`.
+
+    Raise `InvalidDatasetEditionError` if `edition_id` doesn't look like an
+    edition ID.
+    """
+    try:
+        dataset_id, version, _edition, *_ = edition_id.split("/")
+    except ValueError:
+        raise InvalidDatasetEditionError
+
+    return dataset_id, version
+
+
+@functools.cache
+def sdk_config():
+    config = Config()
+    config.config["client_secret"] = get_secret(
+        "/dataplatform/data-uploader/keycloak-client-secret"
+    )
+    return config
