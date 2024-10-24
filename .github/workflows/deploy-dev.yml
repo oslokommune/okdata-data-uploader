@@ -18,9 +18,9 @@ jobs:
       run: pip install tox
     - name: Test with tox
       run: tox -e py,flake8,black
-    - uses: actions/setup-node@v1
+    - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
       with:
-        node-version: '12.x'
+        node-version: '18.x'
     - name: Install NPM dependencies
       run: npm install
     - name: Deploy Lambda functions
