@@ -55,6 +55,18 @@ def test_generate_s3_path_dataset_with_parent():
     assert path == res
 
 
+@pytest.mark.parametrize(
+    "access_rights,confidentiality",
+    [("public", "green"), ("restricted", "yellow"), ("non-public", "red")],
+)
+def test_generate_s3_path_access_rights(access_rights, confidentiality):
+    dataset = {"Id": "foo", "accessRights": access_rights}
+    assert (
+        generate_s3_path(dataset, "foo/1/bar")
+        == f"raw/{confidentiality}/foo/version=1/edition=bar"
+    )
+
+
 def test_generate_s3_path_with_stage():
     dataset = {"Id": "foo", "accessRights": "public"}
     assert (
