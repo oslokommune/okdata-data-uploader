@@ -43,7 +43,7 @@ def handler(event, context):
             dataset_version=version,
             event_count=len(body["events"]),
         )
-    except JSONDecodeError as e:
+    except (JSONDecodeError, TypeError) as e:
         log_add(exc_info=e)
         return error_response(400, "Body is not a valid JSON document")
     except ValidationError as e:
