@@ -204,7 +204,6 @@ def split_edition_id(edition_id):
 
     return dataset_id, version
 
-
 @functools.cache
 def sdk_config():
     config = Config()

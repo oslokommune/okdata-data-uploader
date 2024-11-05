@@ -11,9 +11,9 @@ from okdata.resource_auth import ResourceAuthorizer
 from okdata.sdk.data.dataset import Dataset
 
 from uploader.common import (
-    get_and_validate_dataset,
     error_response,
     generate_s3_path,
+    get_and_validate_dataset,
     sdk_config,
 )
 from uploader.dataset import append_to_dataset
@@ -106,6 +106,9 @@ def handler(event, context):
         Bucket=os.environ["BUCKET"],
         Key=f"{target_s3_path_raw}/data.json",
     )
+
+    # Clean out any existing data in `latest`
+    wr.s3.delete_objects(source_s3_path)
 
     # Write merged data to both the new edition and to `latest`
     for path in target_s3_path_processed, source_s3_path:
