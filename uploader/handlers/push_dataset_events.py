@@ -11,9 +11,9 @@ from okdata.resource_auth import ResourceAuthorizer
 from okdata.sdk.data.dataset import Dataset
 
 from uploader.common import (
-    get_and_validate_dataset,
     error_response,
     generate_s3_path,
+    get_and_validate_dataset,
     sdk_config,
 )
 from uploader.dataset import append_to_dataset
@@ -87,7 +87,8 @@ def handler(event, context):
         log_add(exc_info=e)
         return error_response(400, str(e))
 
-    edition = Dataset(sdk_config()).auto_create_edition(dataset_id, version)
+    sdk = Dataset(sdk_config())
+    edition = sdk.auto_create_edition(dataset_id, version)
 
     target_s3_path_processed = generate_s3_path(
         dataset, edition["Id"], "processed", absolute=True
@@ -107,6 +108,9 @@ def handler(event, context):
         Key=f"{target_s3_path_raw}/data.json",
     )
 
+    # Clean out any existing data in `latest`
+    wr.s3.delete_objects(source_s3_path)
+
     # Write merged data to both the new edition and to `latest`
     for path in target_s3_path_processed, source_s3_path:
         wr.s3.to_deltalake(
@@ -116,6 +120,27 @@ def handler(event, context):
             schema_mode="merge",
             s3_allow_unsafe_rename=True,
         )
+
+    # Create new distribution
+    edition_id = edition["Id"]
+    log_add(edition_id=edition_id)
+
+    distribution = sdk.create_distribution(
+        dataset_id,
+        version,
+        edition_id.split("/")[2],
+        data={
+            "distribution_type": "file",
+            "content_type": "application/vnd.apache.parquet",
+            "filenames": [
+                obj.removeprefix(f"{source_s3_path}/")
+                for obj in wr.s3.list_objects(source_s3_path)
+            ],
+        },
+        retries=3,
+    )
+
+    log_add(distribution_id=distribution["Id"])
 
     return {
         "statusCode": 201,
