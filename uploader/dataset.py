@@ -46,6 +46,15 @@ def dataframe_from_dict(data):
 
 
 def _infer_column_dtype_from_input(col):
+    recognized_datetime_formats = [
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%SZ",
+        "%Y-%m-%dT%H:%M:%S%z",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S.%fZ",
+        "%Y-%m-%dT%H:%M:%S.%f%z",
+    ]
+
     # Detect columns containing date(time) values and attempt casting to relevant
     # dtype. If it fails, keep existing string type.
     if getattr(col.dtypes, "pyarrow_dtype", None) == "string":
@@ -55,10 +64,11 @@ def _infer_column_dtype_from_input(col):
         except ValueError:
             pass
 
-        try:
-            series = pd.to_datetime(col, format="ISO8601", utc=True)
-            return series.astype(pd.ArrowDtype(pa.timestamp("us", tz="UTC")))
-        except ValueError:
-            pass
+        for dt_format in recognized_datetime_formats:
+            try:
+                series = pd.to_datetime(col, format=dt_format, utc=True)
+                return series.astype(pd.ArrowDtype(pa.timestamp("us", tz="UTC")))
+            except ValueError:
+                pass
 
     return col
