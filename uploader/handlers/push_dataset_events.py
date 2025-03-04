@@ -19,11 +19,12 @@ from uploader.common import (
     get_and_validate_dataset,
     sdk_config,
 )
-from uploader.dataset import append_to_dataset
+from uploader.dataset import add_to_dataset
 from uploader.errors import (
-    InvalidSourceTypeError,
     DatasetNotFoundError,
+    InvalidSourceTypeError,
     InvalidTypeError,
+    MissingMergeColumnsError,
 )
 from uploader.schema import get_model_schema
 
@@ -35,10 +36,10 @@ LOCK_RETRIES = 5
 resource_authorizer = ResourceAuthorizer()
 
 
-def _handle_events(dataset, version, source_s3_path, events):
+def _handle_events(dataset, version, merge_on, source_s3_path, events):
     dataset_id = dataset["Id"]
 
-    merged_data = append_to_dataset(source_s3_path, events)
+    merged_data = add_to_dataset(source_s3_path, events, merge_on)
     sdk = Dataset(sdk_config())
     edition = sdk.auto_create_edition(dataset_id, version)
 
@@ -104,10 +105,12 @@ def handler(event, context):
         body = json.loads(event["body"])
         validate(body, get_model_schema("pushEventsRequest"))
         dataset_id = body["datasetId"]
+        merge_on = body.get("mergeOn", [])
         version = body.get("version", "1")
 
         log_add(
             dataset_id=dataset_id,
+            merge_on=merge_on,
             dataset_version=version,
             event_count=len(body["events"]),
         )
@@ -166,7 +169,7 @@ def handler(event, context):
             )
             locked = True
             edition_id = _handle_events(
-                dataset, version, source_s3_path, body["events"]
+                dataset, version, merge_on, source_s3_path, body["events"]
             )
         except ClientError as e:
             if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
@@ -177,6 +180,9 @@ def handler(event, context):
         except InvalidTypeError as e:
             log_add(exc_info=e)
             return error_response(400, str(e))
+        except MissingMergeColumnsError as e:
+            log_add(exc_info=e)
+            return error_response(422, str(e))
         finally:
             if locked:
                 lock_table.delete_item(Key={"DatasetId": dataset_id})
