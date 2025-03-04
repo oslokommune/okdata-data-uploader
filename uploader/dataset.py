@@ -5,30 +5,55 @@ from deltalake.exceptions import TableNotFoundError
 
 from okdata.aws.logging import log_duration
 
-from uploader.errors import InvalidTypeError
+from uploader.errors import InvalidTypeError, MissingMergeColumnsError
 
 
-def append_to_dataset(s3_path, data):
+def add_to_dataset(s3_path, data, merge_on=[]):
+    """Return the dataset found at `s3_path` with `data` added to it.
+
+    `merge_on` is a list of column names to optionally merge ("full join" in
+    the SQL world) the data on. New data overrides old data on conflicting
+    rows.
+
+    If `merge_on` is empty, the new data is simply appended to the existing
+    dataset.
+    """
     # Create DataFrame with new data
     events = dataframe_from_dict(data)
 
-    # Load existing dataset contents to DataFrame and concatenate new objects. If
-    # the dataset is empty, new data is written directly.
+    # Load existing dataset contents to DataFrame and add new objects. If the
+    # dataset is empty, new data is written directly.
     try:
         existing_dataset = log_duration(
             lambda: wr.s3.read_deltalake(s3_path, dtype_backend="pyarrow"),
             "read_deltalake_duration",
         )
-        merged_data = log_duration(
-            lambda: pd.concat([existing_dataset, events]), "dataset_concat_duration"
-        )
+
+        if merge_on:
+            try:
+                events.set_index(merge_on, inplace=True)
+                existing_dataset.set_index(merge_on, inplace=True)
+            except KeyError as e:
+                raise MissingMergeColumnsError(f"Missing ID column(s): {e}")
+            # A note on efficiency: Local tests suggest that this should scale
+            # well to at least tens of millions of rows.
+            merged_data = log_duration(
+                lambda: events.combine_first(existing_dataset),
+                "dataset_combine_first_duration",
+            )
+            # Turn the index back into ordinary columns
+            merged_data.reset_index(inplace=True)
+        else:
+            merged_data = log_duration(
+                lambda: pd.concat([existing_dataset, events]), "dataset_concat_duration"
+            )
     except TableNotFoundError:
         merged_data = events
 
     # Ensure that we have no index
     merged_data = merged_data.reset_index(drop=True)
 
-    # Ensure no columns contains mixed types
+    # Ensure no columns contain mixed types
     mixed_columns = [c for c in merged_data if merged_data[c].dtype == "object"]
 
     if mixed_columns:
