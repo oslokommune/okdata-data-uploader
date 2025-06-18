@@ -125,7 +125,7 @@ typing-extensions==4.8.0
     #   jwcrypto
 tzdata==2024.2
     # via pandas
-urllib3==1.26.19
+urllib3==2.5.0
     # via
     #   botocore
     #   okdata-sdk
