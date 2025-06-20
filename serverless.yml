@@ -98,7 +98,7 @@ functions:
       name: okdata-data-uploader
       command:
         - uploader.handlers.push_dataset_events.handler
-    timeout: 30
+    timeout: 40
     events:
       - http:
           path: /events

@@ -3,6 +3,8 @@ import pandas as pd
 import pyarrow as pa
 from deltalake.exceptions import TableNotFoundError
 
+from okdata.aws.logging import log_duration
+
 from uploader.errors import InvalidTypeError
 
 
@@ -13,11 +15,13 @@ def append_to_dataset(s3_path, data):
     # Load existing dataset contents to DataFrame and concatenate new objects. If
     # the dataset is empty, new data is written directly.
     try:
-        existing_dataset = wr.s3.read_deltalake(
-            s3_path,
-            dtype_backend="pyarrow",
+        existing_dataset = log_duration(
+            lambda: wr.s3.read_deltalake(s3_path, dtype_backend="pyarrow"),
+            "read_deltalake_duration",
         )
-        merged_data = pd.concat([existing_dataset, events])
+        merged_data = log_duration(
+            lambda: pd.concat([existing_dataset, events]), "dataset_concat_duration"
+        )
     except TableNotFoundError:
         merged_data = events
 
