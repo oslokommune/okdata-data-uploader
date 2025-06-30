@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from datetime import datetime, timezone
 from json.decoder import JSONDecodeError
 
 import awswrangler as wr
@@ -157,7 +158,10 @@ def handler(event, context):
     while not edition_id and tries < LOCK_RETRIES:
         try:
             lock_table.put_item(
-                Item={"DatasetId": dataset_id},
+                Item={
+                    "DatasetId": dataset_id,
+                    "Timestamp": datetime.now(timezone.utc).isoformat(),
+                },
                 ConditionExpression="attribute_not_exists(DatasetId)",
             )
             locked = True
