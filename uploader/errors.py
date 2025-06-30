@@ -16,3 +16,7 @@ class DatasetNotFoundError(Exception):
 
 class InvalidTypeError(Exception):
     pass
+
+
+class MissingMergeColumnsError(Exception):
+    pass
