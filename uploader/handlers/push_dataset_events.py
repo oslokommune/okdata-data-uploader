@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import time
 from datetime import datetime, timezone
@@ -9,7 +10,7 @@ import boto3
 from aws_xray_sdk.core import patch_all, xray_recorder
 from botocore.exceptions import ClientError
 from jsonschema import validate, ValidationError, SchemaError
-from okdata.aws.logging import log_add, log_exception, logging_wrapper
+from okdata.aws.logging import log_add, log_duration, log_exception, logging_wrapper
 from okdata.resource_auth import ResourceAuthorizer
 from okdata.sdk.data.dataset import Dataset
 
@@ -28,6 +29,9 @@ from uploader.errors import (
 from uploader.schema import get_model_schema
 
 patch_all()
+
+logger = logging.getLogger()
+logger.setLevel(os.environ.get("LOG_LEVEL", logging.INFO))
 
 LOCK_WAIT_SECONDS = 5
 LOCK_RETRIES = 5
@@ -61,17 +65,24 @@ def _handle_events(dataset, version, source_s3_path, events):
     )
 
     # Clean out any existing data in `latest`
-    wr.s3.delete_objects(source_s3_path)
+    log_duration(
+        lambda: wr.s3.delete_objects(source_s3_path), "delete_objects_duration"
+    )
 
     # Write merged data to both the new edition and to `latest`
-    for path in target_s3_path_processed, source_s3_path:
-        wr.s3.to_deltalake(
-            df=merged_data,
-            path=path,
-            mode="overwrite",
-            schema_mode="merge",
-            s3_allow_unsafe_rename=True,
+    for i, path in enumerate([target_s3_path_processed, source_s3_path]):
+        logger.info(f"Writing the merged data to {path}...")
+        log_duration(
+            lambda: wr.s3.to_deltalake(
+                df=merged_data,
+                path=path,
+                mode="overwrite",
+                schema_mode="merge",
+                s3_allow_unsafe_rename=True,
+            ),
+            f"to_deltalake_{i}_duration",
         )
+        logger.info("...done")
 
     # Create new distribution
     edition_id = edition["Id"]
@@ -157,6 +168,7 @@ def handler(event, context):
 
     while not edition_id and tries < LOCK_RETRIES:
         try:
+            logger.info(f"Locking dataset {dataset_id}...")
             lock_table.put_item(
                 Item={
                     "DatasetId": dataset_id,
@@ -164,14 +176,19 @@ def handler(event, context):
                 },
                 ConditionExpression="attribute_not_exists(DatasetId)",
             )
+            logger.info("...done")
             locked = True
             edition_id = _handle_events(
                 dataset, version, source_s3_path, body["events"]
             )
         except ClientError as e:
             if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                logger.info(
+                    f"Dataset was locked; waiting for {LOCK_WAIT_SECONDS} seconds..."
+                )
                 time.sleep(LOCK_WAIT_SECONDS)
                 tries += 1
+                logger.info(f"...done, trying again (attempt #{tries + 1})")
             else:
                 raise
         except InvalidTypeError as e:
@@ -179,7 +196,9 @@ def handler(event, context):
             return error_response(400, str(e))
         finally:
             if locked:
+                logger.info(f"Unlocking dataset {dataset_id}...")
                 lock_table.delete_item(Key={"DatasetId": dataset_id})
+                logger.info("...done")
 
     if not edition_id:
         log_exception(
