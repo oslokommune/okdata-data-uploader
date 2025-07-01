@@ -63,6 +63,11 @@ is-git-clean:
 		false; \
 	fi
 
+.PHONY: build
+build:
+	@echo "Building the image..."
+	docker build . -t okdata/okdata-uploader
+	@echo "Image okdata/okdata-uploader built"
 
 ###
 # Python build dependencies

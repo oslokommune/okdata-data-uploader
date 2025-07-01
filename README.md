@@ -40,6 +40,13 @@ $ make test
 
 Tests are run using [tox](https://pypi.org/project/tox/).
 
+## Build image
+
+```
+$ make build
+```
+Creates an image with tag: okdata/okdata-uploader, used to test locally if a build in ci/cd fails.
+
 ## Deploy
 
 Deploy to both dev and prod is automatic via GitHub Actions on push to
