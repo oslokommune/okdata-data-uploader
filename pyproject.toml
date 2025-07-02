@@ -13,8 +13,7 @@ exclude = '''
     | .*\.egg-info
     | env
     | venv
-    | \.venv.*
-    | \.build_venv.*
+    | .*venv.*
     | \.serverless
 )/
 '''
