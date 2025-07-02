@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.11
+FROM public.ecr.aws/lambda/python:3.13
 
 COPY uploader ${LAMBDA_TASK_ROOT}/uploader
 COPY doc ${LAMBDA_TASK_ROOT}/doc
