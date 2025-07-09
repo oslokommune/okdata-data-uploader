@@ -1,11 +1,89 @@
+import json
+import logging
+import os
+
 import awswrangler as wr
+import boto3
 import pandas as pd
 import pyarrow as pa
 from deltalake.exceptions import TableNotFoundError
+from okdata.aws.logging import log_add, log_duration
+from okdata.sdk.data.dataset import Dataset
 
-from okdata.aws.logging import log_duration
-
+from uploader.common import generate_s3_path, sdk_config
 from uploader.errors import InvalidTypeError, MissingMergeColumnsError
+
+logger = logging.getLogger()
+logger.setLevel(os.environ.get("LOG_LEVEL", logging.INFO))
+
+
+def handle_events(dataset, version, merge_on, source_s3_path, events):
+    dataset_id = dataset["Id"]
+
+    merged_data = add_to_dataset(source_s3_path, events, merge_on)
+    sdk = Dataset(sdk_config())
+    edition = sdk.auto_create_edition(dataset_id, version)
+
+    target_s3_path_processed = generate_s3_path(
+        dataset, edition["Id"], "processed", absolute=True
+    )
+    target_s3_path_raw = generate_s3_path(dataset, edition["Id"], "raw")
+
+    log_add(
+        target_s3_path_processed=target_s3_path_processed,
+        target_s3_path_raw=target_s3_path_raw,
+    )
+
+    # Write the raw input data
+    s3 = boto3.client("s3", region_name=os.environ["AWS_REGION"])
+    s3.put_object(
+        Body=json.dumps(events),
+        Bucket=os.environ["BUCKET"],
+        Key=f"{target_s3_path_raw}/data.json",
+    )
+
+    # Clean out any existing data in `latest`
+    log_duration(
+        lambda: wr.s3.delete_objects(source_s3_path), "delete_objects_duration"
+    )
+
+    # Write merged data to both the new edition and to `latest`
+    for i, path in enumerate([target_s3_path_processed, source_s3_path]):
+        logger.info(f"Writing the merged data to {path}...")
+        log_duration(
+            lambda: wr.s3.to_deltalake(
+                df=merged_data,
+                path=path,
+                mode="overwrite",
+                schema_mode="merge",
+                s3_allow_unsafe_rename=True,
+            ),
+            f"to_deltalake_{i}_duration",
+        )
+        logger.info("...done")
+
+    # Create new distribution
+    edition_id = edition["Id"]
+    log_add(edition_id=edition_id)
+
+    distribution = sdk.create_distribution(
+        dataset_id,
+        version,
+        edition_id.split("/")[2],
+        data={
+            "distribution_type": "file",
+            "content_type": "application/vnd.apache.parquet",
+            "filenames": [
+                obj.removeprefix(f"{source_s3_path}/")
+                for obj in wr.s3.list_objects(source_s3_path)
+            ],
+        },
+        retries=3,
+    )
+
+    log_add(distribution_id=distribution["Id"])
+
+    return edition["Id"]
 
 
 def add_to_dataset(s3_path, data, merge_on=[]):
