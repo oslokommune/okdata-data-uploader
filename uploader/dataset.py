@@ -37,10 +37,13 @@ def add_to_dataset(s3_path, data, merge_on=[]):
                 raise MissingMergeColumnsError(f"Missing ID column(s): {e}")
             # A note on efficiency: Local tests suggest that this should scale
             # well to at least tens of millions of rows.
-            merged_data = log_duration(
-                lambda: events.combine_first(existing_dataset),
-                "dataset_combine_first_duration",
-            )
+            try:
+                merged_data = log_duration(
+                    lambda: events.combine_first(existing_dataset),
+                    "dataset_combine_first_duration",
+                )
+            except ValueError:
+                raise InvalidTypeError("Mixed types detected")
             # Turn the index back into ordinary columns
             merged_data.reset_index(inplace=True)
         else:

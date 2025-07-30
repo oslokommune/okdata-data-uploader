@@ -202,6 +202,26 @@ def test_merge_on_multiple_column(
 @pytest.mark.parametrize(
     "existing_data,new_data",
     [
+        (
+            [{"id": 1, "value": 1}],
+            [{"id": "invalid", "value": 2}],
+        ),
+        (
+            [{"id": 1, "value": 1}, {"id": 1, "value": 1}],
+            [{"id": "invalid", "value": 2}],
+        ),
+    ],
+)
+def test_merge_on_invalid_type(
+    temp_dir, mocked_wr_read_deltalake, existing_data, new_data
+):
+    with pytest.raises(InvalidTypeError):
+        add_to_dataset("s3://foo/bar", new_data, ["id"])
+
+
+@pytest.mark.parametrize(
+    "existing_data,new_data",
+    [
         ([{"invalid_column": 1}], [{"invalid_column": "2"}]),
         ([{"invalid_column": "2024-10-22T14:43:31.012588"}], [{"invalid_column": "-"}]),
     ],
