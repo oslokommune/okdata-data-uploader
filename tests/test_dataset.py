@@ -1,12 +1,10 @@
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pytest
 
-from uploader.dataset import (
-    append_to_dataset,
-    dataframe_from_dict,
-)
-from uploader.errors import InvalidTypeError
+from uploader.dataset import add_to_dataset, dataframe_from_dict
+from uploader.errors import InvalidTypeError, MissingMergeColumnsError
 
 
 @pytest.mark.parametrize(
@@ -78,7 +76,7 @@ def test_dataframe_from_dict(data, schema):
         ([{"a": 1}], []),
     ],
 )
-def test_append_to_dataset(
+def test_add_to_dataset(
     temp_dir,
     mocked_wr_read_deltalake,
     existing_data,
@@ -91,9 +89,134 @@ def test_append_to_dataset(
         ]
     ).reset_index(drop=True)
 
-    merged_df = append_to_dataset("s3://foo/bar", new_data)
+    merged_df = add_to_dataset("s3://foo/bar", new_data)
 
     assert merged_df.equals(target_df)
+
+
+@pytest.mark.parametrize(
+    "existing_data,new_data,expected_result",
+    [
+        (
+            [{"id": 1, "data": 1}],
+            [{"id": 2, "data": 2}],
+            [{"id": 1, "data": 1}, {"id": 2, "data": 2}],
+        ),
+        (
+            [{"id": 1}],
+            [{"id": 2, "data": 1}],
+            [{"id": 1, "data": np.nan}, {"id": 2, "data": 1}],
+        ),
+        (
+            [{"id": 1, "data": 1}],
+            [{"id": 2}],
+            [{"id": 1, "data": 1}, {"id": 2, "data": np.nan}],
+        ),
+        (
+            [{"id": 1, "data": "override-me"}, {"id": 2, "data": "keep-me"}],
+            [{"id": 1, "data": "overridden"}, {"id": 3, "data": "foo"}],
+            [
+                {"id": 1, "data": "overridden"},
+                {"id": 2, "data": "keep-me"},
+                {"id": 3, "data": "foo"},
+            ],
+        ),
+        (
+            [{"id": 1, "data": 1}, {"id": 1, "data": 2}],
+            [{"id": 1, "data": 5}, {"id": 3, "data": 3}],
+            # Results in duplicates
+            [{"id": 1, "data": 5}, {"id": 1, "data": 5}, {"id": 3, "data": 3}],
+        ),
+    ],
+)
+def test_merge_on_single_column(
+    temp_dir,
+    mocked_wr_read_deltalake,
+    existing_data,
+    new_data,
+    expected_result,
+):
+    merged_df = add_to_dataset("s3://foo/bar", new_data, ["id"])
+
+    pd.testing.assert_frame_equal(
+        merged_df,
+        pd.DataFrame.from_dict(expected_result).reset_index(drop=True),
+        check_dtype=False,
+    )
+
+
+@pytest.mark.parametrize(
+    "existing_data,new_data",
+    [
+        ([{"data": 1}], [{"id": 1, "data": 2}]),
+        ([{"id": 1, "data": 1}], [{"data": 2}]),
+        ([{"data": 1}], [{"data": 2}]),
+        ([{"id": 1, "data": 1}], [{"id": None, "data": 2}]),
+        ([{"id": None, "data": 1}], [{"id": 1, "data": 2}]),
+        ([{"id": None, "data": 1}], [{"id": None, "data": 2}]),
+    ],
+)
+def test_merge_with_missing_merge_column(
+    temp_dir, mocked_wr_read_deltalake, existing_data, new_data
+):
+    with pytest.raises(MissingMergeColumnsError):
+        add_to_dataset("s3://foo/bar", new_data, ["id"])
+
+
+@pytest.mark.parametrize(
+    "existing_data,new_data,expected_result",
+    [
+        (
+            [
+                {"id1": 0, "id2": 0, "data": "zero", "data2": "zero"},
+                {"id1": 1, "id2": 1, "data": "foo", "data2": "keep-me"},
+            ],
+            [
+                {"id1": 1, "id2": 1, "data": "bar"},
+                {"id1": 1, "id2": 2, "data": "bax"},
+            ],
+            [
+                {"id1": 0, "id2": 0, "data": "zero", "data2": "zero"},
+                {"id1": 1, "id2": 1, "data": "bar", "data2": "keep-me"},
+                {"id1": 1, "id2": 2, "data": "bax", "data2": pd.NA},
+            ],
+        )
+    ],
+)
+def test_merge_on_multiple_column(
+    temp_dir,
+    mocked_wr_read_deltalake,
+    existing_data,
+    new_data,
+    expected_result,
+):
+    merged_df = add_to_dataset("s3://foo/bar", new_data, ["id1", "id2"])
+
+    pd.testing.assert_frame_equal(
+        merged_df,
+        pd.DataFrame.from_dict(expected_result).reset_index(drop=True),
+        check_dtype=False,
+    )
+
+
+@pytest.mark.parametrize(
+    "existing_data,new_data",
+    [
+        (
+            [{"id": 1, "value": 1}],
+            [{"id": "invalid", "value": 2}],
+        ),
+        (
+            [{"id": 1, "value": 1}, {"id": 1, "value": 1}],
+            [{"id": "invalid", "value": 2}],
+        ),
+    ],
+)
+def test_merge_on_invalid_type(
+    temp_dir, mocked_wr_read_deltalake, existing_data, new_data
+):
+    with pytest.raises(InvalidTypeError):
+        add_to_dataset("s3://foo/bar", new_data, ["id"])
 
 
 @pytest.mark.parametrize(
@@ -103,10 +226,10 @@ def test_append_to_dataset(
         ([{"invalid_column": "2024-10-22T14:43:31.012588"}], [{"invalid_column": "-"}]),
     ],
 )
-def test_append_to_dataset_mixed_types(
+def test_add_to_dataset_mixed_types(
     mocked_wr_read_deltalake,
     existing_data,
     new_data,
 ):
     with pytest.raises(InvalidTypeError, match=r"invalid_column"):
-        append_to_dataset("s3://foo/bar", new_data)
+        add_to_dataset("s3://foo/bar", new_data)
