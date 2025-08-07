@@ -1,5 +1,6 @@
 import concurrent.futures
 import json
+import os
 from unittest.mock import patch
 
 import boto3
@@ -18,7 +19,7 @@ def _mock_dynamodb():
 
     Mimics the properties of the real `delta-write-lock`.
     """
-    dynamodb = boto3.resource("dynamodb", region_name="eu-west-1")
+    dynamodb = boto3.resource("dynamodb", region_name=os.environ["AWS_REGION"])
     dynamodb.create_table(
         TableName="delta-write-lock",
         KeySchema=[{"AttributeName": "DatasetId", "KeyType": "HASH"}],
@@ -66,7 +67,7 @@ def test_handler_dataset_locked(get_and_validate_dataset, has_access):
 
 
 @mock_aws
-@patch("uploader.handlers.push_dataset_events._handle_events")
+@patch("uploader.handlers.push_dataset_events.handle_events")
 @patch("uploader.handlers.push_dataset_events.resource_authorizer.has_access")
 @patch("uploader.handlers.push_dataset_events.get_and_validate_dataset")
 def test_handler_single_valid_event(
@@ -82,7 +83,7 @@ def test_handler_single_valid_event(
 
 
 @mock_aws
-@patch("uploader.handlers.push_dataset_events._handle_events")
+@patch("uploader.handlers.push_dataset_events.handle_events")
 @patch("uploader.handlers.push_dataset_events.resource_authorizer.has_access")
 @patch("uploader.handlers.push_dataset_events.get_and_validate_dataset")
 def test_handler_multipe_valid_events_in_parallel(
