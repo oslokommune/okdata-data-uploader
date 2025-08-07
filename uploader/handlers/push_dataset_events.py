@@ -116,11 +116,20 @@ def _handler_v2(event, dataset_id):
         return error_response(400, "Body is too large; must be below 256 KiB")
 
     sqs = boto3.resource("sqs", region_name=os.environ["AWS_REGION"])
-    queue = sqs.get_queue_by_name(QueueName=os.environ["EVENT_QUEUE_NAME"])
-    queue.send_message(
-        MessageGroupId=f"data-uploader-{dataset_id}",
-        MessageBody=event["body"],
-    )
+
+    try:
+        queue = sqs.get_queue_by_name(QueueName=os.environ["EVENT_QUEUE_NAME"])
+        queue.send_message(
+            MessageGroupId=f"data-uploader-{dataset_id}",
+            MessageBody=event["body"],
+        )
+    except ClientError as e:
+        log_add(exc_info=e)
+        error_response(
+            503,
+            "Couldn't push data to the queue. Please try again, or contact "
+            "Dataspeilet if the problem persists.",
+        )
 
     return {"statusCode": 200}
 
