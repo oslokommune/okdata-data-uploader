@@ -35,7 +35,11 @@ def _mock_event(body):
     if body:
         # TODO: Can be removed once API version 2 is the default
         body["apiVersion"] = 2
-    return {"body": json.dumps(body), "headers": {"Authorization": ""}}
+    return {
+        "body": json.dumps(body),
+        "headers": {"Authorization": ""},
+        "requestContext": {"authorizer": {"principalId": "test"}},
+    }
 
 
 def test_handler_missing_dataset_id():
@@ -61,13 +65,18 @@ def test_handler_unauthorized():
 @mock_aws
 @patch("uploader.handlers.push_dataset_events.resource_authorizer.has_access")
 @patch("uploader.handlers.push_dataset_events.get_and_validate_dataset")
-def test_handler_single_valid_event(get_and_validate_dataset, has_access):
+@patch("uploader.handlers.push_dataset_events.create_status_trace")
+def test_handler_single_valid_event(
+    create_status_trace, get_and_validate_dataset, has_access
+):
     has_access.return_value = True
     get_and_validate_dataset.return_value = {"Id": "foo", "accessRights": "non-public"}
+    create_status_trace.return_value = {"trace_id": "abc-123"}
     _mock_sqs()
 
     res = handler(_mock_event({"datasetId": "foo", "events": [{"a": 1}]}), None)
     assert res["statusCode"] == 200
+    assert json.loads(res["body"])["trace_id"] == "abc-123"
 
 
 @patch("uploader.handlers.push_dataset_events.resource_authorizer.has_access")
