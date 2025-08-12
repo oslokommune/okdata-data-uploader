@@ -131,6 +131,16 @@ functions:
               - statusCode: "500"
                 responseModels:
                   "application/json": ErrorResponse
+  handle-queue:
+    image:
+      name: okdata-data-uploader
+      command:
+        - uploader.handlers.handle_queue.handler
+    timeout: 40
+    events:
+      - sqs:
+          arn: arn:aws:sqs:${self:provider.region}:${aws:accountId}:DatasetEvents.fifo
+          batchSize: 1
 custom:
   prune:
     automatic: true
