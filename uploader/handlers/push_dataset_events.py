@@ -12,7 +12,12 @@ from jsonschema import validate, ValidationError, SchemaError
 from okdata.aws.logging import log_add, log_exception, logging_wrapper
 from okdata.resource_auth import ResourceAuthorizer
 
-from uploader.common import error_response, generate_s3_path, get_and_validate_dataset
+from uploader.common import (
+    create_status_trace,
+    error_response,
+    generate_s3_path,
+    get_and_validate_dataset,
+)
 from uploader.dataset import handle_events
 from uploader.errors import (
     DatasetNotFoundError,
@@ -106,7 +111,7 @@ def _handler_v1(dataset, version, merge_on, events):
     }
 
 
-def _handler_v2(event, dataset_id):
+def _handler_v2(event, dataset_id, version):
     """Alternate handler based on SQS.
 
     To become the default in favor of `_handler_v1` which does synchronous
@@ -117,11 +122,28 @@ def _handler_v2(event, dataset_id):
 
     sqs = boto3.resource("sqs", region_name=os.environ["AWS_REGION"])
 
+    status = create_status_trace(
+        event["headers"]["Authorization"].split(" ")[-1],
+        {
+            "domain": "dataset",
+            "domain_id": f"{dataset_id}/{version}",
+            "component": "data-uploader",
+            "operation": "push-dataset-events",
+            "user": event["requestContext"]["authorizer"]["principalId"],
+            "start_time": datetime.now(timezone.utc).isoformat(),
+            "end_time": "N/A",
+        },
+    )
+    trace_id = status.get("trace_id")
+
     try:
         queue = sqs.get_queue_by_name(QueueName=os.environ["EVENT_QUEUE_NAME"])
         queue.send_message(
             MessageGroupId=f"data-uploader-{dataset_id}",
             MessageBody=event["body"],
+            MessageAttributes={
+                "trace_id": {"DataType": "String", "StringValue": trace_id}
+            },
         )
     except ClientError as e:
         log_add(exc_info=e)
@@ -131,7 +153,10 @@ def _handler_v2(event, dataset_id):
             "Dataspeilet if the problem persists.",
         )
 
-    return {"statusCode": 200}
+    return {
+        "statusCode": 200,
+        "body": json.dumps({"trace_id": trace_id}),
+    }
 
 
 @logging_wrapper
@@ -183,5 +208,5 @@ def handler(event, context):
         return error_response(500, "Internal server error")
 
     if body.get("apiVersion") == 2:
-        return _handler_v2(event, dataset_id)
+        return _handler_v2(event, dataset_id, version)
     return _handler_v1(dataset, version, merge_on, body["events"])

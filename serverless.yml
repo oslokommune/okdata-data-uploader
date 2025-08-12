@@ -135,7 +135,7 @@ functions:
     image:
       name: okdata-data-uploader
       command:
-        - uploader.handlers.handle_queue.handler
+        - uploader.handlers.handle_queue.event_queue_handler
     timeout: 40
     events:
       - sqs:

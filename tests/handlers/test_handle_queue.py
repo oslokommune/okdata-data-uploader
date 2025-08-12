@@ -3,7 +3,10 @@ from unittest.mock import patch
 
 import pytest
 
-from uploader.handlers.handle_queue import handler
+
+with patch("uploader.common.get_secret") as get_secret:
+    get_secret.return_value = "top-secret"
+    from uploader.handlers.handle_queue import event_queue_handler
 
 
 @pytest.fixture
@@ -24,7 +27,14 @@ def mock_event():
                     "MessageDeduplicationId": "a643f3071394db014cba82ca1a4e68c69e249e885f9d0bf63d051b877bd94ed5",
                     "ApproximateFirstReceiveTimestamp": "1752133103084",
                 },
-                "messageAttributes": {},
+                "messageAttributes": {
+                    "trace_id": {
+                        "stringValue": "test-dataset-c0e03139-574f-5fe3-200b-039e6ea4bdab",
+                        "stringListValues": [],
+                        "binaryListValues": [],
+                        "dataType": "String",
+                    }
+                },
                 "md5OfBody": "2a28ab2ae56e1c0ba54bddeb3ece787e",
                 "eventSource": "aws:sqs",
                 "eventSourceARN": "arn:aws:sqs:eu-west-1:123456789101:DatasetEvents.fifo",
@@ -36,14 +46,17 @@ def mock_event():
 
 @patch("uploader.handlers.handle_queue.get_and_validate_dataset")
 @patch("uploader.handlers.handle_queue.handle_events")
-def test_handler(handle_events, get_and_validate_dataset, mock_event):
+@patch("uploader.handlers.handle_queue.status_add")
+def test_event_queue_handler(
+    status_add, handle_events, get_and_validate_dataset, mock_event
+):
     get_and_validate_dataset.return_value = {
         "Id": "test-dataset",
         "accessRights": "non-public",
     }
     handle_events.return_value = "new-edition"
 
-    res = handler(mock_event, None)
+    res = event_queue_handler(mock_event, None)
 
     handle_events.assert_called_once_with(
         {"Id": "test-dataset", "accessRights": "non-public"},
