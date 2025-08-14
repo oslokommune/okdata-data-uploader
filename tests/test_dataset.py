@@ -1,10 +1,56 @@
+import os
+from unittest.mock import Mock, patch
+
+import boto3
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pytest
+from moto import mock_aws
 
-from uploader.dataset import add_to_dataset, dataframe_from_dict
+from uploader.dataset import add_to_dataset, dataframe_from_dict, handle_events
 from uploader.errors import InvalidTypeError, MissingMergeColumnsError
+
+
+def _mock_s3():
+    s3 = boto3.resource("s3", region_name=os.environ["AWS_REGION"])
+    s3.create_bucket(
+        Bucket=os.environ["BUCKET"],
+        CreateBucketConfiguration={"LocationConstraint": os.environ["AWS_REGION"]},
+    )
+
+
+@mock_aws
+@patch("uploader.dataset.add_to_dataset")
+@patch("uploader.dataset.Dataset")
+@patch("uploader.dataset.wr.s3.to_deltalake")
+@patch("uploader.dataset.alert_if_new_columns")
+def test_handle_events_alert_if_new_columns(
+    alert_if_new_columns, to_deltalake, Dataset, add_to_dataset
+):
+    _mock_s3()
+
+    sdk = Mock()
+    sdk.auto_create_edition.return_value = {"Id": "test-dataset/1/new-edition"}
+    sdk.create_distribution.return_value = {
+        "Id": "test-dataset/1/new-edition/bec60adb3f560543"
+    }
+    Dataset.return_value = sdk
+
+    add_to_dataset.return_value = pd.DataFrame.from_dict(
+        [{"id": 1, "new_col": 2}]
+    ), set("new_col")
+
+    dataset = {"Id": "test-dataset", "accessRights": "public"}
+    handle_events(
+        dataset,
+        "1",
+        [],
+        f"s3://{os.environ['BUCKET']}/test-dataset/1/old-edition",
+        {"id": 1, "data": 2},
+    )
+
+    alert_if_new_columns.assert_called_once_with("test-dataset", set("new_col"))
 
 
 @pytest.mark.parametrize(
@@ -89,7 +135,7 @@ def test_add_to_dataset(
         ]
     ).reset_index(drop=True)
 
-    merged_df = add_to_dataset("s3://foo/bar", new_data)
+    merged_df, _ = add_to_dataset("s3://foo/bar", new_data)
 
     assert merged_df.equals(target_df)
 
@@ -136,7 +182,7 @@ def test_merge_on_single_column(
     new_data,
     expected_result,
 ):
-    merged_df = add_to_dataset("s3://foo/bar", new_data, ["id"])
+    merged_df, _ = add_to_dataset("s3://foo/bar", new_data, ["id"])
 
     pd.testing.assert_frame_equal(
         merged_df,
@@ -190,7 +236,7 @@ def test_merge_on_multiple_column(
     new_data,
     expected_result,
 ):
-    merged_df = add_to_dataset("s3://foo/bar", new_data, ["id1", "id2"])
+    merged_df, _ = add_to_dataset("s3://foo/bar", new_data, ["id1", "id2"])
 
     pd.testing.assert_frame_equal(
         merged_df,
@@ -233,3 +279,36 @@ def test_add_to_dataset_mixed_types(
 ):
     with pytest.raises(InvalidTypeError, match=r"invalid_column"):
         add_to_dataset("s3://foo/bar", new_data)
+
+
+@pytest.mark.parametrize(
+    "existing_data,new_data,expected_new_columns",
+    [
+        ([{"a": 1}], [{"b": 2}], {"b"}),
+        ([{"a": 1}], [{"a": 2}, {"b": 3}], {"b"}),
+        ([{"a": 1}, {"b": 2}], [{"b": 3}, {"c": 4}], {"c"}),
+        ([{"a": 1}, {"b": 2}], [{"c": 3}, {"d": 4}], {"c", "d"}),
+    ],
+)
+def test_add_to_dataset_new_columns(
+    temp_dir, mocked_wr_read_deltalake, existing_data, new_data, expected_new_columns
+):
+    _, new_columns = add_to_dataset("s3://foo/bar", new_data)
+    assert new_columns == expected_new_columns
+
+
+@pytest.mark.parametrize(
+    "existing_data,new_data",
+    [
+        ([], [{"a": 1}]),
+        ([{"a": 1}], [{"a": 2}]),
+        ([{"a": 1}, {"b": 2}], [{"a": 3}]),
+        ([{"a": 1}, {"b": 2}], [{"a": 3}, {"b": 4}]),
+        ([{"a": 1}, {"b": 2}], [{"b": 3}]),
+    ],
+)
+def test_add_to_dataset_no_new_columns(
+    temp_dir, mocked_wr_read_deltalake, existing_data, new_data
+):
+    _, new_columns = add_to_dataset("s3://foo/bar", new_data)
+    assert new_columns == set()

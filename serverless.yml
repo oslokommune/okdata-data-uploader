@@ -38,6 +38,7 @@ provider:
     OKDATA_ENVIRONMENT: ${self:custom.resolvedStage}
     OKDATA_CLIENT_ID: ${self:service}
     EVENT_QUEUE_NAME: DatasetEvents.fifo
+    EMAIL_API_URL: ${ssm:/dataplatform/shared/email-api-url}
   tags:
     GIT_REV: ${git:branch}:${git:sha1}
 
