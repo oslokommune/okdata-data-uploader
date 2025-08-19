@@ -99,6 +99,7 @@ functions:
       name: okdata-data-uploader
       command:
         - uploader.handlers.push_dataset_events.handler
+    memorySize: 4096
     timeout: 30
     events:
       - http:
@@ -136,6 +137,7 @@ functions:
       name: okdata-data-uploader
       command:
         - uploader.handlers.handle_queue.event_queue_handler
+    memorySize: 4096
     timeout: 40
     events:
       - sqs:
