@@ -20,3 +20,7 @@ class InvalidTypeError(Exception):
 
 class MissingMergeColumnsError(Exception):
     pass
+
+
+class AlertEmailError(Exception):
+    pass

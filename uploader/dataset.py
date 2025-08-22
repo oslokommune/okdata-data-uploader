@@ -7,12 +7,12 @@ import boto3
 import pandas as pd
 import pyarrow as pa
 from deltalake.exceptions import TableNotFoundError
-from okdata.aws.logging import log_add, log_duration
+from okdata.aws.logging import log_add, log_duration, log_exception
 from okdata.sdk.data.dataset import Dataset
 
 from uploader.alerts import alert_if_new_columns
 from uploader.common import generate_s3_path, sdk_config
-from uploader.errors import InvalidTypeError, MissingMergeColumnsError
+from uploader.errors import AlertEmailError, InvalidTypeError, MissingMergeColumnsError
 
 logger = logging.getLogger()
 logger.setLevel(os.environ.get("LOG_LEVEL", logging.INFO))
@@ -84,7 +84,10 @@ def handle_events(dataset, version, merge_on, source_s3_path, events):
 
     log_add(distribution_id=distribution["Id"])
 
-    alert_if_new_columns(dataset_id, new_columns)
+    try:
+        alert_if_new_columns(dataset_id, new_columns)
+    except AlertEmailError as e:
+        log_exception(e)
 
     return edition["Id"]
 
