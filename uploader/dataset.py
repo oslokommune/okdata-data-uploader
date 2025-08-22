@@ -10,6 +10,7 @@ from deltalake.exceptions import TableNotFoundError
 from okdata.aws.logging import log_add, log_duration
 from okdata.sdk.data.dataset import Dataset
 
+from uploader.alerts import alert_if_new_columns
 from uploader.common import generate_s3_path, sdk_config
 from uploader.errors import InvalidTypeError, MissingMergeColumnsError
 
@@ -20,7 +21,7 @@ logger.setLevel(os.environ.get("LOG_LEVEL", logging.INFO))
 def handle_events(dataset, version, merge_on, source_s3_path, events):
     dataset_id = dataset["Id"]
 
-    merged_data = add_to_dataset(source_s3_path, events, merge_on)
+    merged_data, new_columns = add_to_dataset(source_s3_path, events, merge_on)
     sdk = Dataset(sdk_config())
     edition = sdk.auto_create_edition(dataset_id, version)
 
@@ -83,11 +84,16 @@ def handle_events(dataset, version, merge_on, source_s3_path, events):
 
     log_add(distribution_id=distribution["Id"])
 
+    alert_if_new_columns(dataset_id, new_columns)
+
     return edition["Id"]
 
 
 def add_to_dataset(s3_path, data, merge_on=[]):
     """Return the dataset found at `s3_path` with `data` added to it.
+
+    Also return a set of new columns (if any) that weren't present in the
+    existing dataset as the second element of the returned tuple.
 
     `merge_on` is a list of column names to optionally merge ("full join" in
     the SQL world) the data on. New data overrides old data on conflicting
@@ -129,6 +135,7 @@ def add_to_dataset(s3_path, data, merge_on=[]):
                 lambda: pd.concat([existing_dataset, events]), "dataset_concat_duration"
             )
     except TableNotFoundError:
+        existing_dataset = None
         merged_data = events
 
     # Ensure that we have no index
@@ -142,7 +149,14 @@ def add_to_dataset(s3_path, data, merge_on=[]):
             f"Invalid or mixed types detected in column(s): {', '.join(mixed_columns)}"
         )
 
-    return merged_data
+    # Detect new columns
+    new_columns = (
+        set()
+        if existing_dataset is None
+        else set(merged_data.columns) - set(existing_dataset.columns)
+    )
+
+    return merged_data, new_columns
 
 
 def dataframe_from_dict(data):
