@@ -75,8 +75,8 @@ def handle_events(dataset, version, merge_on, source_s3_path, events):
             "distribution_type": "file",
             "content_type": "application/vnd.apache.parquet",
             "filenames": [
-                obj.removeprefix(f"{source_s3_path}/")
-                for obj in wr.s3.list_objects(source_s3_path)
+                obj.removeprefix(f"{target_s3_path_processed}/")
+                for obj in wr.s3.list_objects(target_s3_path_processed)
             ],
         },
         retries=3,
