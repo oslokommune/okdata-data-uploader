@@ -3,6 +3,9 @@ import os
 import boto3
 import requests
 from okdata.aws.ssm import get_secret
+from requests.exceptions import HTTPError
+
+from uploader.errors import AlertEmailError
 
 
 def _send_email(to_emails, body):
@@ -17,11 +20,23 @@ def _send_email(to_emails, body):
         },
         headers={"apikey": get_secret("/dataplatform/shared/email-api-key")},
     )
-    res.raise_for_status()
+    try:
+        res.raise_for_status()
+    except HTTPError as e:
+        raise AlertEmailError(
+            "Could not alert {}:\n{}".format(
+                ", ".join(to_emails),
+                str(e),
+            )
+        )
     return res
 
 
 def alert_if_new_columns(dataset_id, new_columns):
+    """Alert subscribers to `dataset_id` about `new_columns`.
+
+    Raise `AlertEmailError` if sending the alert email fails.
+    """
     if not new_columns:
         return
 

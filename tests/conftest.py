@@ -1,8 +1,11 @@
+import os
 import tempfile
 from unittest.mock import patch
 
 import awswrangler as wr
+import boto3
 import deltalake as dl
+from moto import mock_aws
 from pytest import fixture
 
 from uploader.dataset import dataframe_from_dict
@@ -57,3 +60,28 @@ def mocked_wr_read_deltalake(temp_dir, existing_data):
 
     with patch.object(wr.s3, "read_deltalake", side_effect=side_effect):
         yield
+
+
+@fixture
+def dataset():
+    return {"Id": "test-dataset", "accessRights": "public"}
+
+
+@fixture
+def dynamodb(dataset):
+    """Create a mock DynamoDB table named `dataset-subscriptions`.
+
+    Mimics the properties of the real `dataset-subscriptions`.
+    """
+    with mock_aws():
+        dynamodb = boto3.resource("dynamodb", region_name=os.environ["AWS_REGION"])
+        table = dynamodb.create_table(
+            TableName="dataset-subscriptions",
+            KeySchema=[{"AttributeName": "DatasetId", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "DatasetId", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        )
+        table.put_item(
+            Item={"DatasetId": dataset["Id"], "Subscribers": ["test@example.org"]}
+        )
+        yield dynamodb

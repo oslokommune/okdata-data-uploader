@@ -26,14 +26,14 @@ def _mock_s3():
 @patch("uploader.dataset.wr.s3.to_deltalake")
 @patch("uploader.dataset.alert_if_new_columns")
 def test_handle_events_alert_if_new_columns(
-    alert_if_new_columns, to_deltalake, Dataset, add_to_dataset
+    alert_if_new_columns, to_deltalake, Dataset, add_to_dataset, dataset
 ):
     _mock_s3()
 
     sdk = Mock()
-    sdk.auto_create_edition.return_value = {"Id": "test-dataset/1/new-edition"}
+    sdk.auto_create_edition.return_value = {"Id": f"{dataset['Id']}/1/new-edition"}
     sdk.create_distribution.return_value = {
-        "Id": "test-dataset/1/new-edition/bec60adb3f560543"
+        "Id": f"{dataset['Id']}/1/new-edition/bec60adb3f560543"
     }
     Dataset.return_value = sdk
 
@@ -41,16 +41,56 @@ def test_handle_events_alert_if_new_columns(
         [{"id": 1, "new_col": 2}]
     ), set("new_col")
 
-    dataset = {"Id": "test-dataset", "accessRights": "public"}
     handle_events(
         dataset,
         "1",
         [],
-        f"s3://{os.environ['BUCKET']}/test-dataset/1/old-edition",
+        f"s3://{os.environ['BUCKET']}/{dataset['Id']}/1/old-edition",
         {"id": 1, "data": 2},
     )
 
     alert_if_new_columns.assert_called_once_with("test-dataset", set("new_col"))
+
+
+@mock_aws
+@patch("uploader.alerts.get_secret")
+@patch("uploader.dataset.add_to_dataset")
+@patch("uploader.dataset.Dataset")
+@patch("uploader.dataset.wr.s3.to_deltalake")
+def test_handle_events_email_error(
+    to_deltalake, Dataset, add_to_dataset, get_secret, requests_mock, dynamodb, dataset
+):
+    _mock_s3()
+
+    edition_id = f"{dataset['Id']}/1/new-edition"
+
+    sdk = Mock()
+    sdk.auto_create_edition.return_value = {"Id": edition_id}
+    sdk.create_distribution.return_value = {
+        "Id": f"{dataset['Id']}/1/new-edition/bec60adb3f560543"
+    }
+    Dataset.return_value = sdk
+
+    add_to_dataset.return_value = pd.DataFrame.from_dict(
+        [{"id": 1, "new_col": 2}]
+    ), set("new_col")
+
+    get_secret.return_value = "mega-secret"
+
+    requests_mock.register_uri("POST", os.environ["EMAIL_API_URL"], status_code=500)
+
+    # Most importantly test that the call doesn't raise an exception even if
+    # the HTTP call to the email API returned a 500 error response.
+    assert (
+        handle_events(
+            dataset,
+            "1",
+            [],
+            f"s3://{os.environ['BUCKET']}/{dataset['Id']}/1/old-edition",
+            {"id": 1, "data": 2},
+        )
+        == edition_id
+    )
 
 
 @pytest.mark.parametrize(
