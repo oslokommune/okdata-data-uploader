@@ -352,3 +352,17 @@ def test_add_to_dataset_no_new_columns(
 ):
     _, new_columns = add_to_dataset("s3://foo/bar", new_data)
     assert new_columns == set()
+
+
+@pytest.mark.parametrize(
+    "existing_data,new_data",
+    [
+        ([{"id": 1, "a": 1}], [{"id": 1, "a": 2}]),
+        ([{"id": 1, "a": 1}], [{"id": 2, "a": 2}]),
+    ],
+)
+def test_add_to_dataset_with_merge_no_new_columns(
+    temp_dir, mocked_wr_read_deltalake, existing_data, new_data
+):
+    _, new_columns = add_to_dataset("s3://foo/bar", new_data, ["id"])
+    assert new_columns == set()

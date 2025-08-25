@@ -133,6 +133,7 @@ def add_to_dataset(s3_path, data, merge_on=[]):
                 raise InvalidTypeError("Mixed types detected")
             # Turn the index back into ordinary columns
             merged_data.reset_index(inplace=True)
+            existing_dataset.reset_index(inplace=True)
         else:
             merged_data = log_duration(
                 lambda: pd.concat([existing_dataset, events]), "dataset_concat_duration"
