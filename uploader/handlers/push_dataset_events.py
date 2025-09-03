@@ -168,12 +168,14 @@ def handler(event, context):
         dataset_id = body["datasetId"]
         merge_on = body.get("mergeOn", [])
         version = body.get("version", "1")
+        api_version = body.get("apiVersion")
 
         log_add(
             dataset_id=dataset_id,
             merge_on=merge_on,
             dataset_version=version,
             event_count=len(body["events"]),
+            api_version=api_version,
         )
     except (JSONDecodeError, TypeError) as e:
         log_add(exc_info=e)
@@ -207,6 +209,6 @@ def handler(event, context):
         log_add(exc_info=e)
         return error_response(500, "Internal server error")
 
-    if body.get("apiVersion") == 2:
+    if api_version == 2:
         return _handler_v2(event, dataset_id, version)
     return _handler_v1(dataset, version, merge_on, body["events"])
