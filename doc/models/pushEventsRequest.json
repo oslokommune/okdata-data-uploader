@@ -16,6 +16,10 @@
       "type": "array",
       "title": "Events",
       "minItems": 1
+    },
+    "apiVersion": {
+      "type": "number",
+      "title": "API version"
     }
   }
 }
