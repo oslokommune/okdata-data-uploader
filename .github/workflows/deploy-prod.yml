@@ -1,19 +1,24 @@
 name: Deploy Prod
+
 on:
   push:
     branches:
       - main
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy-prod:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
     - name: Set up Python 3.13
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
       with:
-        python-version: 3.13
+        python-version: '3.13'
     - name: Install Python dependencies
       run: pip install tox
     - name: Test with tox
@@ -23,8 +28,12 @@ jobs:
         node-version: '18.x'
     - name: Install NPM dependencies
       run: npm install
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838 # v5.0.0
+      with:
+        role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_PROD }}:role/github-deploy
+        aws-region: eu-west-1
+    - name: Sts GetCallerIdentity
+      run: aws sts get-caller-identity
     - name: Deploy Lambda functions
-      run: |
-        AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_PROD }} \
-        AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }} \
-        ./node_modules/.bin/sls deploy -s prod
+      run: ./node_modules/.bin/sls deploy -s prod
