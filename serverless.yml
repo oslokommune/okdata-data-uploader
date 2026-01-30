@@ -139,7 +139,7 @@ functions:
       command:
         - uploader.handlers.handle_queue.event_queue_handler
     memorySize: 8192
-    timeout: 40
+    timeout: 50
     events:
       - sqs:
           arn: arn:aws:sqs:${self:provider.region}:${aws:accountId}:DatasetEvents.fifo
