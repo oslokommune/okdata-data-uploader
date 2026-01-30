@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 import pytest
 
-
 with patch("uploader.common.get_secret") as get_secret:
     get_secret.return_value = "top-secret"
     from uploader.handlers.handle_queue import event_queue_handler
