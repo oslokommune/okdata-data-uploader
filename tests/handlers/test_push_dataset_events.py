@@ -44,7 +44,9 @@ def test_handler_no_events():
     assert res["statusCode"] == 400
 
 
-def test_handler_unauthorized():
+@patch("uploader.handlers.push_dataset_events.resource_authorizer.has_access")
+def test_handler_unauthorized(has_access):
+    has_access.return_value = False
     res = handler(_mock_event({"datasetId": "foo", "events": [{"a": 1}]}), None)
     assert res["statusCode"] == 403
 
