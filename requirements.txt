@@ -43,7 +43,7 @@ deprecated==1.2.18
     # via deltalake
 deprecation==2.1.0
     # via python-keycloak
-idna==3.10
+idna==3.15
     # via
     #   anyio
     #   requests
