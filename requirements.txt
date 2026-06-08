@@ -79,7 +79,7 @@ pandas==2.3.0
     # via
     #   awswrangler
     #   okdata-data-uploader (setup.py)
-pyarrow==20.0.0
+pyarrow==23.0.1
     # via
     #   awswrangler
     #   okdata-data-uploader (setup.py)
