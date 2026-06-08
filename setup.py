@@ -20,7 +20,7 @@ setuptools.setup(
         "boto3",
         "deltalake",
         "jsonschema",
-        "okdata-aws>=4.1",
+        "okdata-aws>=6",
         "okdata-resource-auth",
         "okdata-sdk",
         "pandas",
