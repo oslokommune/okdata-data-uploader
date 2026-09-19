@@ -4,7 +4,7 @@
 #
 #    pip-compile
 #
-anyio==4.13.0
+anyio==4.14.2
     # via starlette
 arro3-core==0.8.0
     # via deltalake
