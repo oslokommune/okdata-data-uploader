@@ -121,7 +121,7 @@ typing-extensions==4.15.0
     # via
     #   awswrangler
     #   jwcrypto
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   botocore
     #   okdata-sdk
